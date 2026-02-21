@@ -6,8 +6,10 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import javax.swing.*;
-import com.google.code.gson;
-import com.google.gson.JsonParser;
+import org.jfree.chart.*;
+import org.jfree.ui.ApplicationFrame;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.category.DefaultCategoryDataset;
 public class Main {
     static String API_KEY = "1JODJUV5UQ859LYX";
     public static void main(String[] args) throws MalformedURLException {
