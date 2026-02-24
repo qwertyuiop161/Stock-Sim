@@ -16,6 +16,8 @@ import org.jfree.data.time.TimeSeriesCollection;
 
 import com.crazzyghost.alphavantage.AlphaVantage;
 import com.crazzyghost.alphavantage.Config;
+import com.crazzyghost.alphavantage.timeseries.TimeSeries.*;
+import com.crazzyghost.alphavantage.timeseries.TimeSeries.RequestProxy;
 import com.crazzyghost.alphavantage.timeseries.response.TimeSeriesResponse;
 
 public class Main {
@@ -39,31 +41,49 @@ public class Main {
             JFrame frame = new JFrame("Stock Chart");
             JTextField stockSymbolInput = new JTextField(10);
             JButton fetchButton = new JButton("Go");
-            
+            JButton dailyFrame = new JButton("Daily");
+            JButton weeklyFrame = new JButton("Weekly");
+            JButton iDayFrame = new JButton("Intraday");
+            JButton monthlyFrame = new JButton("Monthly");
             JToolBar toolbar = new JToolBar();
             toolbar.add(new JLabel("Stock Symbol: "));
             toolbar.add(stockSymbolInput);
             toolbar.add(fetchButton);
+            JToolBar timeFrames = new JToolBar();
+            toolbar.add(dailyFrame);
+            toolbar.add(weeklyFrame);
+            toolbar.add(iDayFrame);
+            toolbar.add(monthlyFrame);
+            com.crazzyghost.alphavantage.timeseries.TimeSeries lazyvar = AlphaVantage.api().timeSeries();
+            dailyFrame.addActionListener(e -> {
+                holder.updateChartData(lazyvar.daily());
+            });
+            weeklyFrame.addActionListener(e -> {
+                holder.updateChartData(lazyvar.weekly());
+            });
+            iDayFrame.addActionListener(e -> {
+                holder.updateChartData(lazyvar.intraday());
+            });
+            monthlyFrame.addActionListener(e -> {
+                holder.updateChartData(lazyvar.monthly());
+            });
 
             fetchButton.addActionListener(e -> {
                 holder.symbol = stockSymbolInput.getText().toUpperCase();
-                holder.updateChartData();
+                holder.updateChartData(lazyvar.weekly());
             });
-
+            frame.add(timeFrames, BorderLayout.SOUTH);
             frame.add(toolbar, BorderLayout.NORTH);
             frame.add(new ChartPanel(holder.chart), BorderLayout.CENTER);
             frame.pack();
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setVisible(true);
-            holder.updateChartData();
+            holder.updateChartData(lazyvar.weekly());
         });
     }
 
-    public void updateChartData() {
-        AlphaVantage.api()
-            .timeSeries()
-            .weekly()
-            .forSymbol(symbol)
+    public void updateChartData(RequestProxy<?, ?> data) {
+        data.forSymbol(symbol)
             .onSuccess(e -> {
                 TimeSeriesResponse response = (TimeSeriesResponse) e;
                 SwingUtilities.invokeLater(() -> {
