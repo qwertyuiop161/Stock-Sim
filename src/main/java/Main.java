@@ -16,7 +16,6 @@ import org.jfree.data.time.TimeSeriesCollection;
 
 import com.crazzyghost.alphavantage.AlphaVantage;
 import com.crazzyghost.alphavantage.Config;
-import com.crazzyghost.alphavantage.timeseries.TimeSeries.*;
 import com.crazzyghost.alphavantage.timeseries.TimeSeries.RequestProxy;
 import com.crazzyghost.alphavantage.timeseries.response.TimeSeriesResponse;
 
@@ -39,6 +38,7 @@ public class Main {
 
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Stock Chart");
+            frame.setTitle("Paper Trading App");
             JTextField stockSymbolInput = new JTextField(10);
             JButton fetchButton = new JButton("Go");
             JButton dailyFrame = new JButton("Daily");
