@@ -10,4 +10,16 @@ public class StockService {
     public String getDailyStock(String symbol) {
         return webClient.get().uri(uriBuilder -> uriBuilder.path("/query").queryParam("function", "TIME_SERIES_DAILY").queryParam("symbol", symbol).queryParam("apikey", API_KEY).build()).retrieve().bodyToMono(String.class).block();
     }
+    public String searchSymbol(String keywords) {
+        return webClient.get()
+            .uri(uriBuilder -> uriBuilder
+                    .path("/query")
+                    .queryParam("function", "SYMBOL_SEARCH")
+                    .queryParam("keyword", keywords)
+                    .queryParam("apikey", API_KEY)
+                    .build())
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+    }
 }

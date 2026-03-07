@@ -3,62 +3,168 @@
 <head>
     <title>Stock Drafter</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<h2>Stock Chart</h2>
-
-<input id="symbolInput" value="AAPL"/>
-<button id="loadBtn">Load</button>
-
-<canvas id="chart"></canvas>
+<div class="navbar">
+    <div class="logo">Stocks</div>
+    <div class="search-box">
+        <input id="symbolInput" placeholder = "ticker search"/>
+    </div>
+</div>
+<div class="card">
+    <h2 id="stockTitle">Choose Stock</h2>
+    <div class="chart-container">
+    <canvas id="chart" height="400"></canvas>
+    </div>
+</div>
+<style>
+    body {
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+        background-color: #0f1115;
+        color: #e6e6e6;
+    }
+    .chart-container {
+        position: relative;
+        height: 400px;
+        width: 100%;
+    }
+    .navbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px 40px;
+        background-color: #14161c;
+        border-bottom: 1px solid #1f222a;
+    }
+    .logo {
+        font-size: 20px;
+        font-weight: 600;
+    }
+    .search-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .search-box input {
+        padding: 10px 15px;
+        background: #1c1f26;
+        border: 1px solid #2a2d36;
+        border-radius: 6px;
+        color: white;
+        width: 250px;
+    }
+    .search-box button {
+        padding: 10px 18px;
+        background: #00c853;
+        border: none;
+        border-radius: 6px;
+        color: black;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .search-box button:hover {
+        background: #00e676;
+    }
+    .card {
+        margin: 40px auto;
+        padding: 30px;
+        background: #14161c;
+        width: 85%;
+        max-width: 900px;
+        border-radius: 12px;
+        box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    }
+    canvas {
+        margin-top: 20px;
+    }
+    #suggestions {
+        margin-top: 10px;
+        background: #1c1f26;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    #suggestions div {
+        padding: 10px 15px;
+        border-bottom: 1px solid #2a2d36;
+    }
+    #suggestions div:hover {
+        background: #2a2d36;
+    }
+    #chart {
+        width: 100%;
+        height: 400px;
+    }
+</style>
 
 <script>
 let chart;
 
-function loadStock() {
-    const symbol = document.getElementById("symbolInput").value;
+document.getElementById("symbolInput").addEventListener("keypress", function(e) {
+    if (e.key==="Enter") {
+        const symbol = this.value.trim().toUpperCase();
+        if (symbol.length>0) {
+            loadStock(symbol);
+        }
+    }
+})
+
+function loadStock(symbol) {
 
     fetch('/api/stock?symbol=' + symbol)
         .then(res => res.json())
         .then(data => {
 
-            console.log(data);
-
             if (!data["Time Series (Daily)"]) {
-                alert("API limit reached or invalid symbol.");
+                alert("API limit reached.");
                 return;
             }
 
             const timeSeries = data["Time Series (Daily)"];
-
-            const dates = Object.keys(timeSeries)
-                .sort()
-                .slice(-30);
-
+            const dates = Object.keys(timeSeries).sort().slice(-30);
             const prices = dates.map(date =>
                 parseFloat(timeSeries[date]["4. close"])
             );
 
             if (chart) chart.destroy();
 
+            document.getElementById("stockTitle").innerText = symbol;
             chart = new Chart(document.getElementById('chart'), {
                 type: 'line',
                 data: {
                     labels: dates,
                     datasets: [{
-                        label: symbol + " Closing Price",
-                        data: prices
+                        label: symbol+" Closing Price",
+                        data: prices,
+                        borderColor: "#00c853",
+                        backgroundColor: "rgba(0,200,83,0.1)",
+                        tension: 0.3,
+                        fill:true,
+                        pointRadius:0
                     }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: "#888" },
+                            grid: { color: "#1f222a" }
+                        },
+                        y: {
+                            ticks: { color: "#888" },
+                            grid: { color: "#1f222a" }
+                        }
+                    }
                 }
-            });
+            })
         });
 }
-
-document.getElementById("loadBtn")
-    .addEventListener("click", loadStock);
-
-loadStock();
 </script>
 
 </body>
