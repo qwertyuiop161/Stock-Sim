@@ -1,171 +1,281 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Stock Drafter</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href = "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
+
 <body>
 
-<div class="navbar">
-    <div class="logo">Stocks</div>
-    <div class="search-box">
-        <input id="symbolInput" placeholder = "ticker search"/>
+    <div class="navbar">
+        <div class="logo">Stocks</div>
+        <div class="search-box">
+            <input id="symbolInput" placeholder="ticker search" />
+        </div>
     </div>
-</div>
-<div class="card">
-    <h2 id="stockTitle">Choose Stock</h2>
-    <div class="chart-container">
-    <canvas id="chart" height="400"></canvas>
+    <div id="loading">Loading...</div>
+
+    <div id="priceDisplay">
+        $0.00
+        <span id="priceChange"></span>
     </div>
-</div>
-<style>
-    body {
-        margin: 0;
-        font-family: 'Inter', sans-serif;
-        background-color: #0f1115;
-        color: #e6e6e6;
-    }
-    .chart-container {
-        position: relative;
-        height: 400px;
-        width: 100%;
-    }
-    .navbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 15px 40px;
-        background-color: #14161c;
-        border-bottom: 1px solid #1f222a;
-    }
-    .logo {
-        font-size: 20px;
-        font-weight: 600;
-    }
-    .search-box {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    .search-box input {
-        padding: 10px 15px;
-        background: #1c1f26;
-        border: 1px solid #2a2d36;
-        border-radius: 6px;
-        color: white;
-        width: 250px;
-    }
-    .search-box button {
-        padding: 10px 18px;
-        background: #00c853;
-        border: none;
-        border-radius: 6px;
-        color: black;
-        font-weight: 600;
-        cursor: pointer;
-    }
-    .search-box button:hover {
-        background: #00e676;
-    }
-    .card {
-        margin: 40px auto;
-        padding: 30px;
-        background: #14161c;
-        width: 85%;
-        max-width: 900px;
-        border-radius: 12px;
-        box-shadow: 0 0 30px rgba(0,0,0,0.5);
-    }
-    canvas {
-        margin-top: 20px;
-    }
-    #suggestions {
-        margin-top: 10px;
-        background: #1c1f26;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    #suggestions div {
-        padding: 10px 15px;
-        border-bottom: 1px solid #2a2d36;
-    }
-    #suggestions div:hover {
-        background: #2a2d36;
-    }
-    #chart {
-        width: 100%;
-        height: 400px;
-    }
-</style>
 
-<script>
-let chart;
+    <div class="card">
+        <h2 id="stockTitle">Choose Stock</h2>
+        <div class = "stats">
+            <div>Open <span id = "openPrice">-</span></div>
+            <div>High <span id = "highPrice">-</span></div>
+            <div>Low <span id = "lowPrice">-</span></div>
+            <div>Close <span id = "closePrice">-</span></div>
+        </div>
+        <div class="time-buttons">
+            <button onclick="setRange(7)">1W</button>
+            <button onclick="setRange(30)">1M</button>
+            <button onclick="setRange(90)">3M</button>
+            <button onclick="setRange(180)">6M</button>
+        </div>
+        <div class="chart-container">
+            <canvas id="chart"></canvas>
+        </div>
+    </div>
 
-document.getElementById("symbolInput").addEventListener("keypress", function(e) {
-    if (e.key==="Enter") {
-        const symbol = this.value.trim().toUpperCase();
-        if (symbol.length>0) {
-            loadStock(symbol);
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #0f1115;
+            color: #e6e6e6;
         }
-    }
-})
+        .stats {
+            display:flex;
+            gap:30px;
+            margin-bottom: 15px;
+            font-size:14px;
+            color:#aaa;
+        }
+        .stats span {
+            color:#fff;
+            font-weight: 600;
+            margin-left:6px;
+        }
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 40px;
+            background-color: #14161c;
+            border-bottom: 1px solid #1f222a;
+        }
 
-function loadStock(symbol) {
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+        }
 
-    fetch('/api/stock?symbol=' + symbol)
-        .then(res => res.json())
-        .then(data => {
+        .search-box input {
+            padding: 10px 15px;
+            background: #1c1f26;
+            border: 1px solid #2a2d36;
+            border-radius: 6px;
+            color: white;
+            width: 250px;
+        }
 
-            if (!data["Time Series (Daily)"]) {
-                alert("API limit reached.");
-                return;
+        .card {
+            margin: 40px auto;
+            padding: 30px;
+            background: #14161c;
+            width: 85%;
+            max-width: 900px;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        #priceDisplay {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 20px 40px;
+            transition: background 0.3s, color 0.3s;
+            padding: 5px 10px;
+            border-radius: 6px;
+            width: fit-content;
+        }
+
+        .flash-up {
+            background: rgba(0, 255, 100, 0.15);
+            color: #00e676;
+        }
+
+        .flash-down {
+            background: rgba(255, 50, 50, 0.15);
+            color: #ff5252;
+        }
+
+        .time-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .time-buttons button {
+            background: #1c1f26;
+            border:1px solid #2a2d36;
+            color: #aaa;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .time-buttons button:hover {
+            background: #2a2d36;
+            color:white;
+        }
+        #loading {
+            display: none;
+            margin: 20px 40px;
+            color: #aaa;
+        }
+    </style>
+
+    <script>
+
+        let chart
+        let currentPrice = 0
+        let simulatedPrice = 0
+        let currentSymbol = null
+        let currentRange=30
+
+        document.getElementById("symbolInput").addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+                const symbol = this.value.trim().toUpperCase()
+                if (symbol.length > 0) {
+                    loadStock(symbol)
+                }
+            }
+        })
+
+        function loadStock(symbol) {
+
+            currentSymbol = symbol
+
+            fetch('/api/stock?symbol=' + symbol)
+                .then(res => res.json())
+                .then(data => {
+
+                    if (!data["Time Series (Daily)"]) {
+                        alert("API limit reached.")
+                        return
+                    }
+
+                    const timeSeries = data["Time Series (Daily)"]
+                    const dates = Object.keys(timeSeries).sort().slice(-currentRange)
+                    const prices = dates.map(date => parseFloat(timeSeries[date]["4. close"]))
+
+                    const latestPrice = prices[prices.length - 1]
+                    currentPrice = latestPrice
+                    simulatedPrice = latestPrice
+
+                    document.getElementById("priceDisplay").innerText = "$" + latestPrice.toFixed(2)
+
+                    if (chart) chart.destroy()
+
+                    document.getElementById("stockTitle").innerText = symbol
+
+                    chart = new Chart(document.getElementById("chart"), {
+                        type: 'line',
+                        data: {
+                            labels: dates,
+                            datasets: [{
+                                label: symbol + " Closing Price",
+                                data: prices,
+                                borderColor: "#00e676",
+                                borderWidth: 2,
+                                backgroundColor: "rgba(0,200,83,0.1)",
+                                tension: 0.3,
+                                fill: true,
+                                pointRadius: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                duration: 800,
+                                easing: 'easeOutQuart'
+                            },
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            plugins: {
+                                tooltip: {
+                                    enabled: true,
+                                    backgroundColor: "#1c1f26",
+                                    titleColor: "#fff",
+                                    bodyColor: "#ddd"
+                                },
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: { color: "#888" },
+                                    grid: { color: "#1f222a" }
+                                },
+                                y: {
+                                    ticks: { color: "#888" },
+                                    grid: { color: "#1f222a" }
+                                }
+                            },
+                            elements: {
+                                line: {
+                                    borderJoinStyle: "round"
+                                }
+                            }
+                        }
+                    })
+                    const latestDate = dates[dates.legnth-1];
+                    const dayData = timeSeries[latestDate];
+                    document.getElementById("openPrice").innerText = dayData["1. open"];
+                    document.getElementById("highPrice").innerText = dayData["2. high"];
+                    document.getElementById("lowPrice").innerText = dayData["3. low"];
+                    document.getElementById("closePrice").innerText = dayData["4. close"];
+
+                })
+        }
+        function setRange(days) {
+            currentRange=days;
+            if (currentSymbol) {
+                loadStock(currentSymbol);
+            }
+        }
+        setInterval(() => {
+
+            if (!currentSymbol) return
+
+            const change = (Math.random() - 0.5) * 0.1
+            simulatedPrice += change
+
+            const priceElement = document.getElementById("priceDisplay")
+            priceElement.innerText = "$" + simulatedPrice.toFixed(2)
+
+            priceElement.classList.remove("flash-up", "flash-down")
+
+            if (change > 0) {
+                priceElement.classList.add("flash-up")
+            } else {
+                priceElement.classList.add("flash-down")
             }
 
-            const timeSeries = data["Time Series (Daily)"];
-            const dates = Object.keys(timeSeries).sort().slice(-30);
-            const prices = dates.map(date =>
-                parseFloat(timeSeries[date]["4. close"])
-            );
+        }, 1500)
 
-            if (chart) chart.destroy();
-
-            document.getElementById("stockTitle").innerText = symbol;
-            chart = new Chart(document.getElementById('chart'), {
-                type: 'line',
-                data: {
-                    labels: dates,
-                    datasets: [{
-                        label: symbol+" Closing Price",
-                        data: prices,
-                        borderColor: "#00c853",
-                        backgroundColor: "rgba(0,200,83,0.1)",
-                        tension: 0.3,
-                        fill:true,
-                        pointRadius:0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            ticks: { color: "#888" },
-                            grid: { color: "#1f222a" }
-                        },
-                        y: {
-                            ticks: { color: "#888" },
-                            grid: { color: "#1f222a" }
-                        }
-                    }
-                }
-            })
-        });
-}
-</script>
+    </script>
 
 </body>
+
 </html>
