@@ -4,6 +4,7 @@
 <head>
     <title>Stock Drafter</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 
@@ -24,17 +25,31 @@
 
     <div class="card">
         <h2 id="stockTitle">Choose Stock</h2>
-        <div class = "stats">
-            <div>Open <span id = "openPrice">-</span></div>
-            <div>High <span id = "highPrice">-</span></div>
-            <div>Low <span id = "lowPrice">-</span></div>
-            <div>Close <span id = "closePrice">-</span></div>
+        <div class="stats">
+            <div>Open <span id="openPrice"></span></div>
+            <div>High <span id="highPrice"></span></div>
+            <div>Low <span id="lowPrice"></span></div>
+            <div>Close <span id="closePrice"></span></div>
+        </div>
+        <div class="fundamentals">
+            <div>Market Cap <span id="marketCap"></span></div>
+            <div>EPS (TTM) <span id="eps"></span></div>
+            <div>P/E Ratio <span id="pe"></span></div>
+            <div>Dividend Yield <span id="dividend"></span></div>
         </div>
         <div class="time-buttons">
-            <button onclick="setRange(7)">1W</button>
-            <button onclick="setRange(30)">1M</button>
-            <button onclick="setRange(90)">3M</button>
-            <button onclick="setRange(180)">6M</button>
+            <button onclick="setRange('1D')">1D</button>
+            <button onclick="setRange('5D')">5D</button>
+            <button onclick="setRange('1M')">1M</button>
+            <button onclick="setRange('6M')">6M</button>
+            <button onclick="setRange('YTD')">YTD</button>
+            <button onclick="setRange('1Y')">1Y</button>
+            <button onclick="setRange('5Y')">5Y</button>
+            <button onclick="setRange('ALL')">ALL</button>
+        </div>
+        <div class="chart-type">
+            <button onclick="setChartType('line')">Line</button>
+            <button onclick="setChartType('candlestick')">Candles</button>
         </div>
         <div class="chart-container">
             <canvas id="chart"></canvas>
@@ -48,18 +63,21 @@
             background-color: #0f1115;
             color: #e6e6e6;
         }
+
         .stats {
-            display:flex;
-            gap:30px;
+            display: flex;
+            gap: 30px;
             margin-bottom: 15px;
-            font-size:14px;
-            color:#aaa;
+            font-size: 14px;
+            color: #aaa;
         }
+
         .stats span {
-            color:#fff;
+            color: #fff;
             font-weight: 600;
-            margin-left:6px;
+            margin-left: 6px;
         }
+
         .navbar {
             display: flex;
             align-items: center;
@@ -124,7 +142,49 @@
             gap: 10px;
             margin-bottom: 10px;
         }
+
         .time-buttons button {
+            background: #1c1f26;
+            border: 1px solid #2a2d36;
+            color: #aaa;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .time-buttons button:hover {
+            background: #2a2d36;
+            color: white;
+        }
+
+        #loading {
+            display: none;
+            margin: 20px 40px;
+            color: #aaa;
+        }
+
+        .fundamentals {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .fundamentals span {
+            color: white;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        .chart-type{
+            display:flex;
+            gap:10px;
+            margin-bottom: 10px;
+        }
+
+        .chart-type button {
             background: #1c1f26;
             border:1px solid #2a2d36;
             color: #aaa;
@@ -132,24 +192,23 @@
             border-radius: 6px;
             cursor: pointer;
         }
-        .time-buttons button:hover {
+
+        .chart-type button:hover {
             background: #2a2d36;
             color:white;
-        }
-        #loading {
-            display: none;
-            margin: 20px 40px;
-            color: #aaa;
         }
     </style>
 
     <script>
-
+        const stockCache = {}
         let chart
         let currentPrice = 0
         let simulatedPrice = 0
         let currentSymbol = null
-        let currentRange=30
+        let currentRange = "1M"
+        let dates
+        let sortedDates
+        let chartType="line"
 
         document.getElementById("symbolInput").addEventListener("keypress", function (e) {
             if (e.key === "Enter") {
@@ -161,97 +220,145 @@
         })
 
         function loadStock(symbol) {
-
+            document.getElementById("loading").style.display = "block"
             currentSymbol = symbol
-
             fetch('/api/stock?symbol=' + symbol)
                 .then(res => res.json())
                 .then(data => {
 
                     if (!data["Time Series (Daily)"]) {
                         alert("API limit reached.")
+                        document.getElementById("loading").style.display = "none"
                         return
                     }
 
                     const timeSeries = data["Time Series (Daily)"]
-                    const dates = Object.keys(timeSeries).sort().slice(-currentRange)
-                    const prices = dates.map(date => parseFloat(timeSeries[date]["4. close"]))
+                    sortedDates = Object.keys(timeSeries).sort()
+                    const ranges = {
+                        "1D": 1,
+                        "5D": 5,
+                        "1M": 30,
+                        "6M": 180,
+                        "1Y": 365,
+                        "5Y": 1825
+                    }
+                    if (currentRange === "YTD") {
+                        const year = new Date().getFullYear().toString()
+                        dates = sortedDates.filter(d => d.startsWith(year))
+                    } else if (ranges[currentRange]) {
+                        dates = sortedDates.slice(-ranges[currentRange])
+                    } else {
+                        dates = sortedDates
+                    }
+                    const candleData = dates.map(date => ({
+                        x: date,
+                        o: parseFloat(timeSeries[date]["1. open"]),
+                        h: parseFloat(timeSeries[date]["2. high"]),
+                        l: parseFloat(timeSeries[date]["3. low"]),
+                        c: parseFloat(timeSeries[date]["4. close"])
+                    }))
+                    const lineData = dates.map(date =>
+                        parseFloat(timeSeries[date]["4. close"])
+                    )
 
-                    const latestPrice = prices[prices.length - 1]
+                    const volumeData = dates.map(date =>
+                        parseFloat(timeSeries[date]["5. volume"])
+                    )
+
+                    const latestPrice = candleData[candleData.length - 1].c
                     currentPrice = latestPrice
                     simulatedPrice = latestPrice
-
-                    document.getElementById("priceDisplay").innerText = "$" + latestPrice.toFixed(2)
+                    document.getElementById("priceDisplay").childNodes[0].nodeValue = "$" + latestPrice.toFixed(2) + " ";
 
                     if (chart) chart.destroy()
 
                     document.getElementById("stockTitle").innerText = symbol
+                    fetch('/api/overview?symbol=' + symbol)
+                        .then(res => res.json())
+                        .then(data => {
+                            document.getElementById("marketCap").innerText = data.MarketCapitalization
+                            document.getElementById("eps").innerText = data.EPS
+                            document.getElementById("pe").innerText = data.PERatio
+                            document.getElementById("dividend").innerText = data.DividendYield
+                        })
 
                     chart = new Chart(document.getElementById("chart"), {
-                        type: 'line',
+                        type: chartType,
                         data: {
                             labels: dates,
-                            datasets: [{
-                                label: symbol + " Closing Price",
-                                data: prices,
+                            datasets: chartType==="line"
+                            ? [{
+                                label: symbol+" Price",
+                                data:lineData,
                                 borderColor: "#00e676",
-                                borderWidth: 2,
+                                borderWidth:2,
                                 backgroundColor: "rgba(0,200,83,0.1)",
-                                tension: 0.3,
-                                fill: true,
-                                pointRadius: 0
+                                tension:0.3,
+                                fill:true,
+                                pointRadius:0
+                            }]
+                            : [{
+                                label: symbol,
+                                data:candleData,
                             }]
                         },
                         options: {
                             responsive: true,
-                            maintainAspectRatio: false,
-                            animation: {
-                                duration: 800,
-                                easing: 'easeOutQuart'
+                            maintainAspectRatio:false,
+                            interaction:{
+                                mode:'index',
+                                intersect:false
                             },
-                            interaction: {
-                                mode: 'index',
-                                intersect: false
-                            },
-                            plugins: {
-                                tooltip: {
-                                    enabled: true,
-                                    backgroundColor: "#1c1f26",
-                                    titleColor: "#fff",
-                                    bodyColor: "#ddd"
-                                },
-                                legend: { display: false }
-                            },
-                            scales: {
-                                x: {
-                                    ticks: { color: "#888" },
-                                    grid: { color: "#1f222a" }
-                                },
-                                y: {
-                                    ticks: { color: "#888" },
-                                    grid: { color: "#1f222a" }
+                            plugins:{
+                                legend:{
+                                    display:false
                                 }
                             },
-                            elements: {
-                                line: {
-                                    borderJoinStyle: "round"
+                            scales:{
+                                x:{
+                                    ticks:{
+                                        color:"#888"
+                                    },
+                                    grid:{
+                                        color:"#1f222a"
+                                    },
+                                    type: 'category'
+                                },
+                                y: {
+                                    ticks:{
+                                        color:"#888"
+                                    },
+                                    grid:{
+                                        color:"#1f222a"
+                                    }
                                 }
                             }
                         }
                     })
-                    const latestDate = dates[dates.legnth-1];
+                    const latestDate = dates[dates.length - 1];
                     const dayData = timeSeries[latestDate];
                     document.getElementById("openPrice").innerText = dayData["1. open"];
                     document.getElementById("highPrice").innerText = dayData["2. high"];
                     document.getElementById("lowPrice").innerText = dayData["3. low"];
                     document.getElementById("closePrice").innerText = dayData["4. close"];
 
-                })
+                    document.getElementById("loading").style.display = "none"
+                    
+                    stockCache[symbol] = data
+                }
+            )
         }
+
         function setRange(days) {
-            currentRange=days;
+            currentRange = days;
             if (currentSymbol) {
                 loadStock(currentSymbol);
+            }
+        }
+        function setChartType(type) {
+            chartType=type
+            if(currentSymbol) {
+                loadStock(currentSymbol)
             }
         }
         setInterval(() => {
@@ -262,7 +369,7 @@
             simulatedPrice += change
 
             const priceElement = document.getElementById("priceDisplay")
-            priceElement.innerText = "$" + simulatedPrice.toFixed(2)
+            priceElement.childNodes[0].nodeValue = "$" + simulatedPrice.toFixed(2) + " "
 
             priceElement.classList.remove("flash-up", "flash-down")
 
@@ -273,7 +380,11 @@
             }
 
         }, 1500)
-
+        setInterval(() => {
+            if (currentSymbol) {
+                loadStock(currentSymbol)
+            }
+        }, 60000)
     </script>
 
 </body>
