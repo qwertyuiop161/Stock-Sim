@@ -275,6 +275,11 @@
                         return
                     }
                     const timeSeries = data["Time Series (Daily)"]
+                    if (!timeSeries) {
+                        console.error("API returned: ", data)
+                        alert("check error in console")
+                        return
+                    }
                     sortedDates = Object.keys(timeSeries).sort()
                     const ranges = {
                         "5D": 5,
@@ -361,8 +366,12 @@
                                 label:"Volume",
                                 data:volumeData,
                                 yAxisID:"volume",
-                                backgroundColor: "rgba(120,120,120,0.3)",
-                                borderWidth:0
+                                backgroundColor: candleData.map(c=>c.c>=c.o?'rgba(0,230,118,0.4)':'rgba(225,82,82,0.4)'),
+                                borderWidth:0,
+                                barThickness: 'flex',
+                                maxBarThickness: 6,
+                                categoryPercentage:0.6,
+                                barPercentage:0.8
                             }
                         ]
                         },
@@ -496,7 +505,7 @@
                 time:Date.now()
             }
             portfolio.push(trade)
-            consolde.log("portfolio: ", portfolio)
+            console.log("portfolio: ", portfolio)
         }
         function sellStock() {
             if(!currentSymbol) return
@@ -515,7 +524,7 @@
                 time:Date.now()
             }
             portfolio.push(trade)
-            consolde.log("portfolio: ", portfolio)
+            console.log("portfolio: ", portfolio)
         }
     </script>
 
