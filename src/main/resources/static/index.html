@@ -63,6 +63,23 @@
                 <button onclick="sellStock()">Sell</button>
             </div>
         </div>
+
+        <div class="transactions-section">
+            <h2>Transaction History</h2>
+            <div class="transaction-header">
+                <div>Symbol</div>
+                <div>Type</div>
+                <div>Shares</div>
+                <div>Price</div>
+                <div>Total</div>
+            </div>
+            <div id="transactionsList"></div>
+        </div>
+        <div class="portfolio-total">
+            <div class="total-label">Total Value</div>
+            <div id="totalValue">$0.00</div>
+        <button onclick="refreshPortfolioValue()">Refresh</button>
+        </div>
     </div>
 
     <style>
@@ -72,24 +89,28 @@
             background-color: #0f1115;
             color: #e6e6e6;
         }
+
         .trade-panel {
             margin-top: 20px;
             padding-top: 15px;
             border-top: 1px solid #1f222a;
         }
+
         .trade-controls {
             display: flex;
-            gap:10px;
+            gap: 10px;
             margin-top: 10px;
         }
-        .trade-controls input{
+
+        .trade-controls input {
             background: #1c1f26;
             border: 1px solid #2a2d36;
             color: white;
-            padding:8px;
+            padding: 8px;
             border-radius: 6px;
             width: 120px;
         }
+
         .trade-controls button {
             background: #1c1f26;
             border: 1px solid #2a2d36;
@@ -98,9 +119,11 @@
             border-radius: 6px;
             cursor: pointer;
         }
+
         .trade-controls button:hover {
             background: #2a2d36;
         }
+
         .stats {
             display: flex;
             gap: 30px;
@@ -144,8 +167,8 @@
             background: #14161c;
             width: 85%;
             max-width: 1400px;
-            margin:40px auto;
-            padding:30px;
+            margin: 40px auto;
+            padding: 30px;
             border-radius: 12px;
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
         }
@@ -236,6 +259,70 @@
             background: #2a2d36;
             color: white;
         }
+
+        .transactions-section {
+            width: 85%;
+            max-width: 1000px;
+            margin: 40px auto;
+            background: #14161c;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .transactions-header,
+        .transaction-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+            padding: 10px 0;
+        }
+
+        .transactions-header {
+            font-weight: 600;
+            border-bottom: 1px solid #1f222a;
+            color: #aaa;
+        }
+
+        .transaction-row {
+            border-bottom: 1px solid #1f222a;
+            font-size: 14px;
+        }
+
+        .transaction-row.buy {
+            color: #00e676;
+        }
+
+        .transaction-row.sell {
+            color: #ff5252;
+        }
+
+        #transactionsList {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .portfolio-total {
+            width: 85%;
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #14161c;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 20px;
+            font-weight: 600;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .total-label {
+            color: #aaa;
+        }
+
+        #totalValue {
+            color: #00e676;
+        }
     </style>
 
     <script>
@@ -248,8 +335,10 @@
         let dates
         let sortedDates
         let chartType = "line"
-        let portfolio = []
-
+        let portfolio = JSON.parse(localStorage.getItem("portfolio")) || []
+        window.onload=function() {
+            refreshPortfolioValue()
+        }
         document.getElementById("symbolInput").addEventListener("keypress", function (e) {
             if (e.key === "Enter") {
                 const symbol = this.value.trim().toUpperCase()
@@ -308,7 +397,7 @@
                         y: parseFloat(timeSeries[date]["4. close"])
                     }))
 
-                    const volumeData = dates.map(date =>({
+                    const volumeData = dates.map(date => ({
                         x: new Date(date),
                         y: parseFloat(timeSeries[date]["5. volume"])
                     }))
@@ -335,45 +424,45 @@
                         data: {
                             datasets: [
                                 {
-                                label: symbol,
-                                data: chartType === "line" ? lineData : candleData,
-                                barThickness: 'flex',
-                                maxBarThickness: 10,
-                                categoryPercentage: 0.7,
-                                barPercentage: 0.9,
-                                tension: 0.3,
-                                fill: chartType === "line",
-                                pointRadius: 0,
-                                borderColor: chartType == "line" ? "#00e676" : {
-                                    up: "#00e676",
-                                    down: "#ff5252",
-                                    unchanged: "#999"
+                                    label: symbol,
+                                    data: chartType === "line" ? lineData : candleData,
+                                    barThickness: 'flex',
+                                    maxBarThickness: 10,
+                                    categoryPercentage: 0.7,
+                                    barPercentage: 0.9,
+                                    tension: 0.3,
+                                    fill: chartType === "line",
+                                    pointRadius: 0,
+                                    borderColor: chartType == "line" ? "#00e676" : {
+                                        up: "#00e676",
+                                        down: "#ff5252",
+                                        unchanged: "#999"
+                                    },
+                                    color: {
+                                        up: '#00e676',
+                                        down: '#ff5252',
+                                        unchanged: '#999',
+                                    },
+                                    borderWidth: chartType === "line" ? 2 : {
+                                        up: 1,
+                                        down: 1,
+                                        unchanged: 1
+                                    },
+                                    backgroundColor: "rgba(0,200,83,0.1)"
                                 },
-                                color: {
-                                    up: '#00e676',
-                                    down: '#ff5252',
-                                    unchanged: '#999',
-                                },
-                                borderWidth: chartType ==="line" ? 2: {
-                                    up : 1,
-                                    down:1,
-                                    unchanged:1
-                                },
-                                backgroundColor: "rgba(0,200,83,0.1)"
-                            },
-                            {
-                                type:"bar",
-                                label:"Volume",
-                                data:volumeData,
-                                yAxisID:"volume",
-                                backgroundColor: candleData.map(c=>c.c>=c.o?'rgba(0,230,118,0.4)':'rgba(225,82,82,0.4)'),
-                                borderWidth:0,
-                                barThickness: 'flex',
-                                maxBarThickness: 6,
-                                categoryPercentage:0.6,
-                                barPercentage:0.8
-                            }
-                        ]
+                                {
+                                    type: "bar",
+                                    label: "Volume",
+                                    data: volumeData,
+                                    yAxisID: "volume",
+                                    backgroundColor: candleData.map(c => c.c >= c.o ? 'rgba(0,230,118,0.4)' : 'rgba(225,82,82,0.4)'),
+                                    borderWidth: 0,
+                                    barThickness: 'flex',
+                                    maxBarThickness: 6,
+                                    categoryPercentage: 0.6,
+                                    barPercentage: 0.8
+                                }
+                            ]
                         },
                         options: {
                             responsive: true,
@@ -425,7 +514,7 @@
                                         display: false
                                     },
                                     ticks: {
-                                        display:false
+                                        display: false
                                     }
                                 }
                             },
@@ -488,46 +577,96 @@
                 loadStock(currentSymbol)
             }
         }, 60000)
+        function renderTransactions() {
+            const container = document.getElementById("transactionsList")
+            container.innerHTML = ""
+            portfolio.forEach(trade => {
+                const row = document.createElement("div")
+                row.className = "transaction-row " + trade.type.toLowerCase()
+                const total = trade.price * trade.shares
+                row.innerHTML = `
+                    <div>${trade.symbol}</div>
+                    <div>${trade.type}</div>
+                    <div>${trade.shares.toFixed(4)}</div>
+                    <div>${trade.price.toFixed(2)}</div>
+                    <div>${total.toFixed(2)}</div>
+                    `
+                container.appendChild(row)
+            })
+        }
+        async function refreshPortfolioValue() {
+            let positions = {}
+            portfolio.forEach(trade => {
+                if (!positions[trade.symbol]) {
+                    positions[trade.symbol] = 0
+                }
+                if (trade.type === "BUY") {
+                    positions[trade.symbol] += trade.shares
+                } else {
+                    positions[trade.symbol] -= trade.shares
+                }
+            })
+            let totalValue = 0
+            for (const symbol in positions) {
+                const shares = positions[symbol]
+                if (shares <= 0) continue
+                const res = await fetch('/api/stock?symbol=' + symbol)
+                const data = await res.json()
+                const timeSeries = data["Time Series (Daily)"]
+                if (!timeSeries) continue
+                const latestDate = Object.keys(timeSeries).sort().pop()
+                const price = parseFloat(timeSeries[latestDate]["4. close"])
+                totalValue += price * shares
+            }
+            document.getElementById("totalValue").innerText = "$" + totalValue.toFixed(2)
+        }
         function buyStock() {
-            if(!currentSymbol) return
-            const dollars=parseFloat(document.getElementById("dollarAmount").value)
-            if (!dollars || dollars <=0) {
+            if (!currentSymbol) return
+            const dollars = parseFloat(document.getElementById("dollarAmount").value)
+            if (!dollars || dollars <= 0) {
                 alert("Enter valid amount")
                 return
             }
-            const shares = dollars/simulatedPrice
-            const trade={
+            const shares = dollars / simulatedPrice
+            const trade = {
                 symbol: currentSymbol,
-                price:simulatedPrice,
-                shares:shares,
+                price: simulatedPrice,
+                shares: shares,
                 dollars: dollars,
-                type:"BUY",
-                time:Date.now()
+                type: "BUY",
+                time: Date.now()
             }
             portfolio.push(trade)
+            localStorage.setItem("portfolio", JSON.stringify(portfolio))
+            renderTransactions()
+            refreshPortfolioValue()
             console.log("portfolio: ", portfolio)
         }
         function sellStock() {
-            if(!currentSymbol) return
-            const dollars=parseFloat(document.getElementById("dollarAmount").value)
-            if (!dollars || dollars <=0) {
+            if (!currentSymbol) return
+            const dollars = parseFloat(document.getElementById("dollarAmount").value)
+            if (!dollars || dollars <= 0) {
                 alert("Enter valid amount")
                 return
             }
-            const shares = dollars/simulatedPrice
-            const trade={
+            const shares = dollars / simulatedPrice
+            const trade = {
                 symbol: currentSymbol,
-                price:simulatedPrice,
-                shares:shares,
-                dollars:dollars,
-                type:"SELL",
-                time:Date.now()
+                price: simulatedPrice,
+                shares: shares,
+                dollars: dollars,
+                type: "SELL",
+                time: Date.now()
             }
             portfolio.push(trade)
+            localStorage.setItem("portfolio", JSON.stringify(portfolio))
+            renderTransactions()
+            refreshPortfolioValue()
             console.log("portfolio: ", portfolio)
         }
+        renderTransactions()
+        refreshPortfolioValue()
     </script>
-
 </body>
 
 </html>
