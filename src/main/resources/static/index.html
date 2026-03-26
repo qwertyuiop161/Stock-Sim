@@ -649,8 +649,15 @@
             const email = document.getElementById('emailInput').value
             const password = document.getElementById('passwordInput').value
             auth.signInWithEmailAndPassword(email, password)
+            .then(userCredential => {
+                document.getElementById("authModal").style.display="none"
+                document.getElementById("startScreen").style.display="none"
+                updateCashDisplay()
+                renderTransactions()
+                refreshPortfolioValue()
+            })
             .catch(error => {
-                alert('Sign up error: '+error.message)
+                alert('Sign in error: '+error.message)
             })
         }
         function signUpWithEmail() {
