@@ -8,14 +8,62 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 
 <body>
+    <div id="authModal" class="modal-overlay">
+        <div class="modal-content">
+            <h1>Paper Trading</h1>
+            <div id="authContainer">
+                <div id="loginForm">
+                    <h2>Sign In</h2>
+                    <input id="emailInput" type="email" placeholder="Email">
+                    <input id="passwordInput" type="password" placeholder="Password">
+                    <button onclick="signInInWithEmail()">Sign In</button>
+                    <button onclick="signUpWithEmail()">Sign Up</button>
+                    <div class="auth-divider">or</div>
+                    <button onclick="signInWithGoogle()" class="google-btn">Sign In With Google</button>
+                    <button onclick="signInWithGithub()" class="github-btn">Sign In With Github</button>
+                </div>
+                <div id="userInfo" style="display: none;">
+                    <h2>Welcome, <span id="userName"></span>.</h2>
+                    <p id="userEmail"></p>
+                    <button onclick="signOut()">Sign Out</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="startScreen" class="modal-overlay">
+        <div class="modal-content">
+            <h1>Stock Trading Simulator</h1>
+            <p>Enter your starting cash amount</p>
+            <input id="startingCashInput" type="number" placeholder="Enter amount ($)" min="100" step="0.01" />
+            <button onclick="startTrading()">Start Trading</button>
+        </div>
+    </div>
+
+    <div id="tradingSessionEndedScreen" class="modal-overlay" style="display: none;">
+        <div class="modal-content session-ended">
+            <h1>Trading Session Ended</h1>
+            <p id="sessionMessage"></p>
+            <div id="finalStats"></div>
+            <button onclick="endSession()">Start New Session</button>
+        </div>
+    </div>
 
     <div class="navbar">
         <div class="logo">Stocks</div>
-        <div class="search-box">
-            <input id="symbolInput" placeholder="ticker search" />
+        <div id="userDisplay" style="display:none">
+            <span id="navUserName"></span>
+            <button onclick="signOut()" class="logout-btn">Logout</button>
+        </div>
+        <div class="cash-display">
+            <div>Starting: <span id="startingCashDisplay"></span>$0.00</div>
+            <div>Current: <span id="currentCashDisplay"></span>$0.00</div>
+            <button onclick="endSession()" class="restart-btn">Restart</button>
         </div>
     </div>
     <div id="loading">Loading...</div>
@@ -78,7 +126,7 @@
         <div class="portfolio-total">
             <div class="total-label">Total Value</div>
             <div id="totalValue">$0.00</div>
-        <button onclick="refreshPortfolioValue()">Refresh</button>
+            <button onclick="refreshPortfolioValue()">Refresh</button>
         </div>
     </div>
 
@@ -88,6 +136,108 @@
             font-family: 'Inter', sans-serif;
             background-color: #0f1115;
             color: #e6e6e6;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #14161c;
+            padding: 60px 40px;
+            border-radius: 12px;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-content h1 {
+            font-size: 32px;
+            margin: 0 0 20px 0;
+            color: #00e676;
+        }
+
+        .modal-content p {
+            font-size: 16px;
+            color: #aaa;
+            margin: 0 0 30px 0;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            background: #1c1f26;
+            border: 1px solid #2a2d36;
+            color: white;
+            border-radius: 6px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        .logout-btn {
+            background: #666;
+            border: 1px solid #888;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        #userDisplay {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #aaa;
+            font-size: 14px;
+        }
+        .modal-content button {
+            width: 100%;
+            padding: 12px;
+            background: #00e676;
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .modal-content button:hover {
+            background: #00ff00;
+        }
+
+        .modal-content.session-ended {
+            border: 2px solid #ff5252;
+        }
+
+        .modal-content.session-ended h1 {
+            color: #ff5252;
+        }
+
+        #finalStats {
+            background: #1c1f26;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            text-align: left;
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        #finalStats div {
+            margin: 10px 0;
         }
 
         .trade-panel {
@@ -145,6 +295,40 @@
             padding: 15px 40px;
             background-color: #14161c;
             border-bottom: 1px solid #1f222a;
+            gap: 40px;
+        }
+
+        .cash-display {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .cash-display div {
+            display: flex;
+            gap: 8px;
+        }
+
+        .cash-display span {
+            color: #00e676;
+            font-weight: 600;
+        }
+
+        .restart-btn {
+            background: #d0383e;
+            border: 1px solid #ff5252;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .restart-btn:hover {
+            background: #ff5252;
         }
 
         .logo {
@@ -323,9 +507,63 @@
         #totalValue {
             color: #00e676;
         }
+        .google-btn, .github-btn {
+            background: #4285f4;
+            color:white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px 0;
+            width: 100%;
+        }
+        .github-btn {
+            background: #24292e;
+        }
+        .auth-divider {
+            text-align: center;
+            margin: 15px 0;
+            color: #aaa;
+            position: relative;
+        }
+        .auth-divider::before {
+            content: '';
+            position:absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #333;
+        }
+        .auth-divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0f1115;
+            padding: 0 10px;
+        }
     </style>
 
     <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBRUPzojYTuWxStkfp5_MylVas90yY1TiQ",
+            authDomain: "paper-trader-b92c0.firebaseapp.com",
+            projectId: "paper-trader-b92c0",
+            storageBucket: "paper-trader-b92c0.firebasestorage.app",
+            messagingSenderId: "721021960238",
+            appId: "1:721021960238:web:6e177ac886aebcf73f5fbf",
+            measurementId: "G-WGTGP25JQQ"
+        }
+        firebase.initializeApp(firebaseConfig)
+        const auth = firebase.auth()
+        const db = firebase.firestore()
+        let currentUser = null
+        let startingCash = 0
+        let currentCash = 0
+        let tradingActive = false
+
         const stockCache = {}
         let chart
         let currentPrice = 0
@@ -336,9 +574,185 @@
         let sortedDates
         let chartType = "line"
         let portfolio = JSON.parse(localStorage.getItem("portfolio")) || []
-        window.onload=function() {
-            refreshPortfolioValue()
+
+        function loadUserData() {
+            if (!currentUser) return
+            const userRef = db.collection('users').doc(currentUser.uid)
+            userRef.get().then(doc => {
+                if (doc.exists) {
+                    const data = doc.data()
+                    if (data.tradingSession) {
+                        startingCash=data.tradingSession.startingCash ||0
+                        currentCash = data.tradingSession.currentCash || 0
+                        tradingActive = true
+                        document.getElementById("startScreen").style.display="none"
+                        updateCashDisplay()
+                        renderTransactions()
+                        refreshPortfolioValue()
+                    } else {
+                        document.getElementById("startScreen").style.display = "flex"
+                        tradingActive=false
+                    }
+                } else { 
+                    document.getElementById("startScreen").style.display = "flex"
+                    tradingActive=false
+                }
+            })
+
         }
+        function resetApp() {
+            startingCash=0
+            currentCash=0
+            tradingActive=false
+            portfolio=[]
+            simulatedPrice=0
+            document.getElementById("startingCashDisplay").innerText = "$0.00"
+            document.getElementById("currentCashDisplay").innerText = "$0.00"
+            document.getElementById("symbolInput").value = ""
+            document.getElementById("dollarAmount").value = ""
+            renderTransactions()
+            if (chart) {
+                chart.destroy()
+                chart=null
+            }
+        }
+        function startTrading() {
+            const input = document.getElementById("startingCashInput").value
+            const amount = parseFloat(input)
+            if (!amount ||amount<100) {
+                alert("Enter amount of at least 100")
+                return
+            }
+            startingCash=amount
+            currentCash=amount
+            tradingActive=true
+            portfolio=[]
+            const userRef=db.collection('users').doc(currentUser.uid)
+            userRef.set({
+                tradingSession: {
+                    startingCash: startingCash,
+                    currentCash: currentCash
+                },
+                portfolio: portfolio
+            },
+            {
+                merge:true
+            }
+        )
+        document.getElementById("startScreen").style.display="none"
+        updateCashDisplay()
+        renderTransactions()
+        refreshPortfolioValue()
+        }
+        function signInWithEmail() {
+            const email = document.getElementById('emailInput').value
+            const password = document.getElementById('passwordInput').value
+            auth.signInWithEmailAndPassword(email, password)
+            .catch(error => {
+                alert('Sign up error: '+error.message)
+            })
+        }
+        function signUpWithEmail() {
+            const email = document.getElementById('emailInput').value
+            const password = document.getElementById('passwordInput').value
+            auth.createUserWithEmailAndPassword(email, password)
+                .catch(error => {
+                    alert('Sign up error'+error.message)
+                })
+        }
+
+        function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider()
+            auth.signInWithPopup(provider)
+        }
+
+        function signInWithGithub() {
+            const provider = new firebase.auth.GithubAuthProvider()
+            auth.signInWithPopup(provider)
+        }
+
+        function signOut() {
+            auth.signOut()
+        }
+
+        auth.onAuthStateChanged(user => {
+            currentUser = user
+            if (user) {
+                document.getElementById('authModal').style.display = 'none'
+                document.getElementById('userName').textContent = user.displayName ||user.email.split('@')[0]
+                document.getElementById('userEmail').textContent = user.email
+                document.getElementById('loginForm').style.display = 'none'
+                document.getElementById('userInfo').style.display = 'block'
+                document.getElementById('userDisplay').style.display='flex'
+                document.getElementById('navUserName').textContent=user.displayName || user.email.split('@')[0]
+                loadUserData()
+            } else {
+                document.getElementById('authModal').style.display = 'flex'
+                document.getElementById('startScreen').style.display='none'
+                document.getElementById('tradingSessionEndedScreen').style.display='none'
+                document.getElementById('loginForm').style.display = 'block'
+                document.getElementById('userInfo').style.display = 'none'
+                document.getElementById('userDisplay').style.display='none'
+                resetApp()
+            }
+        })
+
+        function endSession() {
+            portfolio = []
+            startingCash = 0
+            currentCash = 0
+            tradingActive = false
+            simulatedPrice = 0
+            currentSymbol = null
+
+            const userRef = db.collection('users').doc(currentUser.uid)
+            userRef.delete()
+            document.getElementById("startScreen").style.display = "flex"
+            document.getElementById("tradingSessionEndedScreen").style.display = "none"
+            document.getElementById("startingCashInput").value = ""
+            document.getElementById("symbolInput").value = ""
+            document.getElementById("dollarAmount").value = ""
+            renderTransactions()
+
+            if (chart) {
+                chart.destroy()
+                chart = null
+            }
+        }
+
+        function updateCashDisplay() {
+            document.getElementById("startingCashDisplay").innerText = "$" + startingCash.toFixed(2)
+            document.getElementById("currentCashDisplay").innerText = "$" + currentCash.toFixed(2)
+            if (currentUser&&tradingActive) {
+                const userRef=db.collection('users').doc(currentUser.uid)
+                userRef.update({
+                    'tradingSeesion.currentCash':currentCash
+                })
+            }
+            if (currentCash < startingCash - 1000) {
+                endTradingSession("LOSS", startingCash, currentCash)
+            }
+        }
+
+        function endTradingSession(reason, starting, current) {
+            tradingActive = false
+            const loss = starting - current
+            const lossPercent = ((loss / starting) * 100).toFixed(2)
+
+            document.getElementById("sessionMessage").innerText =
+                reason === "LOSS"
+                    ? "Your cash dropped $1000 below your starting amount. Game Over!"
+                    : "Game Over!"
+
+            document.getElementById("finalStats").innerHTML = `
+                <div>Starting Cash: <strong>$${starting.toFixed(2)}</strong></div>
+                <div>Final Cash: <strong>$${current.toFixed(2)}</strong></div>
+                <div>Total Loss: <strong>$${loss.toFixed(2)} (${lossPercent}%)</strong></div>
+            `
+
+            document.getElementById("tradingSessionEndedScreen").style.display = "flex"
+        }
+
         document.getElementById("symbolInput").addEventListener("keypress", function (e) {
             if (e.key === "Enter") {
                 const symbol = this.value.trim().toUpperCase()
@@ -349,6 +763,11 @@
         })
 
         function loadStock(symbol) {
+            if (!tradingActive) {
+                alert("Start a trading session first!")
+                return
+            }
+
             document.getElementById("loading").style.display = "block"
             currentSymbol = symbol
             fetch('/api/stock?symbol=' + symbol)
@@ -551,7 +970,7 @@
         }
         setInterval(() => {
 
-            if (!currentSymbol) return
+            if (!currentSymbol || !tradingActive) return
 
             const change = (Math.random() - 0.5) * 0.1
             simulatedPrice += change
@@ -573,10 +992,11 @@
 
         }, 1500)
         setInterval(() => {
-            if (currentSymbol) {
+            if (currentSymbol && tradingActive) {
                 loadStock(currentSymbol)
             }
         }, 60000)
+
         function renderTransactions() {
             const container = document.getElementById("transactionsList")
             container.innerHTML = ""
@@ -594,7 +1014,10 @@
                 container.appendChild(row)
             })
         }
+
         async function refreshPortfolioValue() {
+            if (!tradingActive) return
+
             let positions = {}
             portfolio.forEach(trade => {
                 if (!positions[trade.symbol]) {
@@ -606,7 +1029,8 @@
                     positions[trade.symbol] -= trade.shares
                 }
             })
-            let totalValue = 0
+
+            let totalStockValue = 0
             for (const symbol in positions) {
                 const shares = positions[symbol]
                 if (shares <= 0) continue
@@ -616,17 +1040,42 @@
                 if (!timeSeries) continue
                 const latestDate = Object.keys(timeSeries).sort().pop()
                 const price = parseFloat(timeSeries[latestDate]["4. close"])
-                totalValue += price * shares
+                totalStockValue += price * shares
             }
-            document.getElementById("totalValue").innerText = "$" + totalValue.toFixed(2)
+
+            let cashSpent = 0
+            portfolio.forEach(trade => {
+                if (trade.type === "BUY") {
+                    cashSpent += trade.dollars
+                } else {
+                    cashSpent -= trade.dollars
+                }
+            })
+            currentCash = startingCash - cashSpent
+            const totalPortfolioValue = currentCash + totalStockValue
+
+            document.getElementById("totalValue").innerText = "$" + totalPortfolioValue.toFixed(2)
+            updateCashDisplay()
         }
+
         function buyStock() {
+            if (!tradingActive) {
+                alert("Start a trading session first!")
+                return
+            }
+
             if (!currentSymbol) return
             const dollars = parseFloat(document.getElementById("dollarAmount").value)
             if (!dollars || dollars <= 0) {
                 alert("Enter valid amount")
                 return
             }
+
+            if (dollars > currentCash) {
+                alert(`You only have $${currentCash.toFixed(2)} available. Cannot buy $${dollars.toFixed(2)} worth.`)
+                return
+            }
+
             const shares = dollars / simulatedPrice
             const trade = {
                 symbol: currentSymbol,
@@ -637,35 +1086,66 @@
                 time: Date.now()
             }
             portfolio.push(trade)
-            localStorage.setItem("portfolio", JSON.stringify(portfolio))
+            const userRef = db.collection('users').doc(currentUser.uid)
+            userRef.update({
+                portfolio:portfolio
+            })
+            currentCash -= dollars
             renderTransactions()
             refreshPortfolioValue()
+            document.getElementById("dollarAmount").value = ""
             console.log("portfolio: ", portfolio)
         }
+
         function sellStock() {
+            if (!tradingActive) {
+                alert("Start a trading session first!")
+                return
+            }
+
             if (!currentSymbol) return
             const dollars = parseFloat(document.getElementById("dollarAmount").value)
             if (!dollars || dollars <= 0) {
                 alert("Enter valid amount")
                 return
             }
-            const shares = dollars / simulatedPrice
+
+            let sharesOwned = 0
+            portfolio.forEach(trade => {
+                if (trade.symbol === currentSymbol) {
+                    if (trade.type === "BUY") {
+                        sharesOwned += trade.shares
+                    } else {
+                        sharesOwned -= trade.shares
+                    }
+                }
+            })
+
+            const sharesToSell = dollars / simulatedPrice
+            if (sharesToSell > sharesOwned) {
+                alert(`You only own ${sharesOwned.toFixed(4)} shares of ${currentSymbol}. Cannot sell ${sharesToSell.toFixed(4)} shares.`)
+                return
+            }
+
             const trade = {
                 symbol: currentSymbol,
                 price: simulatedPrice,
-                shares: shares,
+                shares: sharesToSell,
                 dollars: dollars,
                 type: "SELL",
                 time: Date.now()
             }
             portfolio.push(trade)
-            localStorage.setItem("portfolio", JSON.stringify(portfolio))
+            const userRef = db.collection('users').doc(currentUser.uid)
+            userRef.update({
+                portfolio:portfolio
+            })
+            currentCash += dollars
             renderTransactions()
             refreshPortfolioValue()
+            document.getElementById("dollarAmount").value = ""
             console.log("portfolio: ", portfolio)
         }
-        renderTransactions()
-        refreshPortfolioValue()
     </script>
 </body>
 
