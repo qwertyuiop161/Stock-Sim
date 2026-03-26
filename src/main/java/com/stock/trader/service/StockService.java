@@ -6,9 +6,13 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Service
 public class StockService {
     private final WebClient webClient = WebClient.create("https://www.alphavantage.co");
-    private final String API_KEY = "noppppppppppppppppppppppp";
+    
+    private String getTimeBasedApiKey() {
+        long currentMinute = System.currentTimeMillis() / (60 * 1000);
+        return "minute_" + currentMinute;
+    }
     public String getDailyStock(String symbol) {
-        return webClient.get().uri(uriBuilder -> uriBuilder.path("/query").queryParam("function", "TIME_SERIES_DAILY").queryParam("symbol", symbol).queryParam("apikey", API_KEY).build())
+        return webClient.get().uri(uriBuilder -> uriBuilder.path("/query").queryParam("function", "TIME_SERIES_DAILY").queryParam("symbol", symbol).queryParam("apikey", getTimeBasedApiKey()).build())
         .retrieve()
         .bodyToMono(String.class)
         .block();
@@ -19,7 +23,19 @@ public class StockService {
                     .path("/query")
                     .queryParam("function", "SYMBOL_SEARCH")
                     .queryParam("keyword", keywords)
-                    .queryParam("apikey", API_KEY)
+                    .queryParam("apikey", getTimeBasedApiKey())
+                    .build())
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+    }
+    public String getOverview(String symbol) {
+        return webClient.get()
+            .uri(uriBuilder -> uriBuilder
+                    .path("/query")
+                    .queryParam("function", "OVERVIEW")
+                    .queryParam("symbol", symbol)
+                    .queryParam("apikey", getTimeBasedApiKey())
                     .build())
                 .retrieve()
                 .bodyToMono(String.class)

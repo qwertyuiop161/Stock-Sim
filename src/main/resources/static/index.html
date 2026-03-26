@@ -573,7 +573,7 @@
         let dates
         let sortedDates
         let chartType = "line"
-        let portfolio = JSON.parse(localStorage.getItem("portfolio")) || []
+        let portfolio = []
 
         function loadUserData() {
             if (!currentUser) return
@@ -584,6 +584,7 @@
                     if (data.tradingSession) {
                         startingCash=data.tradingSession.startingCash ||0
                         currentCash = data.tradingSession.currentCash || 0
+                        portfolio = data.portfolio || []
                         tradingActive = true
                         document.getElementById("startScreen").style.display="none"
                         updateCashDisplay()

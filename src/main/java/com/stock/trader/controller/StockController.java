@@ -22,4 +22,8 @@ public class StockController {
     public String search(@RequestParam String keywords) {
         return stockService.searchSymbol(keywords);
     }
+    @GetMapping("/overview")
+    public String getOverview(@RequestParam(defaultValue = "AAPL") String symbol) {
+        return stockService.getOverview(symbol);
+    }
 }
