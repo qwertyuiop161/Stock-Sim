@@ -75,6 +75,7 @@
 
     <div class="card">
         <h2 id="stockTitle">Choose Stock</h2>
+        <input id="symbolInput" type="text" placeholder="Enter stock symbol (e.g., AAPL)" class="symbol-input">
         <div class="stats">
             <div>Open <span id="openPrice"></span></div>
             <div>High <span id="highPrice"></span></div>
@@ -346,15 +347,35 @@
         }
 
         .card {
-            margin: 40px auto;
+            margin: 80px auto 40px auto;
             padding: 30px;
             background: #14161c;
             width: 85%;
             max-width: 1400px;
-            margin: 40px auto;
-            padding: 30px;
             border-radius: 12px;
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .symbol-input {
+            width: 100%;
+            padding: 12px;
+            background: #1c1f26;
+            border: 1px solid #2a2d36;
+            color: white;
+            border-radius: 6px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        .symbol-input::placeholder {
+            color: #666;
+        }
+
+        .symbol-input:focus {
+            outline: none;
+            border-color: #00e676;
+            box-shadow: 0 0 10px rgba(0, 230, 118, 0.2);
         }
 
         .chart-container {
