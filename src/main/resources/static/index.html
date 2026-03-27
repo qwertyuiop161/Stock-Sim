@@ -60,6 +60,7 @@
             <span id="navUserName"></span>
             <button onclick="signOut()" class="logout-btn">Logout</button>
         </div>
+        <button onclick="toggleDarkMode()" class="theme-toggle">Theme Toggle</button>
         <div class="cash-display">
             <div>Starting: <span id="startingCashDisplay"></span>$0.00</div>
             <div>Current: <span id="currentCashDisplay"></span>$0.00</div>
@@ -185,6 +186,7 @@
             margin-bottom: 20px;
             box-sizing: border-box;
         }
+
         .logout-btn {
             background: #666;
             border: 1px solid #888;
@@ -202,6 +204,7 @@
             color: #aaa;
             font-size: 14px;
         }
+
         .modal-content button {
             width: 100%;
             padding: 12px;
@@ -528,9 +531,11 @@
         #totalValue {
             color: #00e676;
         }
-        .google-btn, .github-btn {
+
+        .google-btn,
+        .github-btn {
             background: #4285f4;
-            color:white;
+            color: white;
             border: none;
             padding: 10px;
             border-radius: 4px;
@@ -538,24 +543,28 @@
             margin: 5px 0;
             width: 100%;
         }
+
         .github-btn {
             background: #24292e;
         }
+
         .auth-divider {
             text-align: center;
             margin: 15px 0;
             color: #aaa;
             position: relative;
         }
+
         .auth-divider::before {
             content: '';
-            position:absolute;
+            position: absolute;
             top: 50%;
             left: 0;
             right: 0;
             height: 1px;
             background: #333;
         }
+
         .auth-divider::after {
             content: '';
             position: absolute;
@@ -564,6 +573,51 @@
             transform: translateX(-50%);
             background: #0f1115;
             padding: 0 10px;
+        }
+
+        body.light-mode {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        body.light-mode .navbar {
+            background-color: #ffffff;
+            border-bottom: 1px solid #ddd;
+        }
+
+        body.light-mode .card {
+            background: #ffffff;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
+        }
+
+        body.light-mode input,
+        body.light-mode textarea {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            color: #333;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 1px solid #2a2d36;
+            color: #aaa;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .theme-toggle:hover {
+            background: #1c1f26;
+        }
+
+        body.light-mode .theme-toggle {
+            border-color: #ddd;
+            color: #333;
+        }
+
+        body.light-mode .theme-toggle:hover {
+            background: #efefef;
         }
     </style>
 
@@ -603,31 +657,51 @@
                 if (doc.exists) {
                     const data = doc.data()
                     if (data.tradingSession) {
-                        startingCash=data.tradingSession.startingCash ||0
+                        startingCash = data.tradingSession.startingCash || 0
                         currentCash = data.tradingSession.currentCash || 0
                         portfolio = data.portfolio || []
                         tradingActive = true
-                        document.getElementById("startScreen").style.display="none"
+                        document.getElementById("startScreen").style.display = "none"
                         updateCashDisplay()
                         renderTransactions()
                         refreshPortfolioValue()
                     } else {
                         document.getElementById("startScreen").style.display = "flex"
-                        tradingActive=false
+                        tradingActive = false
                     }
-                } else { 
+                } else {
                     document.getElementById("startScreen").style.display = "flex"
-                    tradingActive=false
+                    tradingActive = false
                 }
             })
-
+            loadThemePreference()
+        }
+        function toggleDarkMode() {
+            const isDarkMode = document.body.classList.toggle('light-mode')
+            localStorage.setItem('theme', isDarkMode ? 'light' : 'dark')
+            updateThemeIcon()
+        }
+        function updateThemeIcon() {
+            const icon = document.querySelector('.theme-toggle');
+            if (document.body.classList.contains('light-mode')) {
+                icon.textContent = 'Light';
+            } else {
+                icon.textContent = 'Dark';
+            }
+        }
+        function loadThemePreference() {
+            const savedTheme  = localStorage.getItem('theme')
+            if (savedTheme==='light') {
+                document.body.classList.add('light-mode')
+            }
+            updateThemeIcon()
         }
         function resetApp() {
-            startingCash=0
-            currentCash=0
-            tradingActive=false
-            portfolio=[]
-            simulatedPrice=0
+            startingCash = 0
+            currentCash = 0
+            tradingActive = false
+            portfolio = []
+            simulatedPrice = 0
             document.getElementById("startingCashDisplay").innerText = "$0.00"
             document.getElementById("currentCashDisplay").innerText = "$0.00"
             document.getElementById("symbolInput").value = ""
@@ -635,21 +709,21 @@
             renderTransactions()
             if (chart) {
                 chart.destroy()
-                chart=null
+                chart = null
             }
         }
         function startTrading() {
             const input = document.getElementById("startingCashInput").value
             const amount = parseFloat(input)
-            if (!amount ||amount<100) {
+            if (!amount || amount < 100) {
                 alert("Enter amount of at least 100")
                 return
             }
-            startingCash=amount
-            currentCash=amount
-            tradingActive=true
-            portfolio=[]
-            const userRef=db.collection('users').doc(currentUser.uid)
+            startingCash = amount
+            currentCash = amount
+            tradingActive = true
+            portfolio = []
+            const userRef = db.collection('users').doc(currentUser.uid)
             userRef.set({
                 tradingSession: {
                     startingCash: startingCash,
@@ -657,36 +731,36 @@
                 },
                 portfolio: portfolio
             },
-            {
-                merge:true
-            }
-        )
-        document.getElementById("startScreen").style.display="none"
-        updateCashDisplay()
-        renderTransactions()
-        refreshPortfolioValue()
+                {
+                    merge: true
+                }
+            )
+            document.getElementById("startScreen").style.display = "none"
+            updateCashDisplay()
+            renderTransactions()
+            refreshPortfolioValue()
         }
         function signInWithEmail() {
             const email = document.getElementById('emailInput').value
             const password = document.getElementById('passwordInput').value
             auth.signInWithEmailAndPassword(email, password)
-            .then(userCredential => {
-                document.getElementById("authModal").style.display="none"
-                document.getElementById("startScreen").style.display="none"
-                updateCashDisplay()
-                renderTransactions()
-                refreshPortfolioValue()
-            })
-            .catch(error => {
-                alert('Sign in error: '+error.message)
-            })
+                .then(userCredential => {
+                    document.getElementById("authModal").style.display = "none"
+                    document.getElementById("startScreen").style.display = "none"
+                    updateCashDisplay()
+                    renderTransactions()
+                    refreshPortfolioValue()
+                })
+                .catch(error => {
+                    alert('Sign in error: ' + error.message)
+                })
         }
         function signUpWithEmail() {
             const email = document.getElementById('emailInput').value
             const password = document.getElementById('passwordInput').value
             auth.createUserWithEmailAndPassword(email, password)
                 .catch(error => {
-                    alert('Sign up error'+error.message)
+                    alert('Sign up error' + error.message)
                 })
         }
 
@@ -708,20 +782,20 @@
             currentUser = user
             if (user) {
                 document.getElementById('authModal').style.display = 'none'
-                document.getElementById('userName').textContent = user.displayName ||user.email.split('@')[0]
+                document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0]
                 document.getElementById('userEmail').textContent = user.email
                 document.getElementById('loginForm').style.display = 'none'
                 document.getElementById('userInfo').style.display = 'block'
-                document.getElementById('userDisplay').style.display='flex'
-                document.getElementById('navUserName').textContent=user.displayName || user.email.split('@')[0]
+                document.getElementById('userDisplay').style.display = 'flex'
+                document.getElementById('navUserName').textContent = user.displayName || user.email.split('@')[0]
                 loadUserData()
             } else {
                 document.getElementById('authModal').style.display = 'flex'
-                document.getElementById('startScreen').style.display='none'
-                document.getElementById('tradingSessionEndedScreen').style.display='none'
+                document.getElementById('startScreen').style.display = 'none'
+                document.getElementById('tradingSessionEndedScreen').style.display = 'none'
                 document.getElementById('loginForm').style.display = 'block'
                 document.getElementById('userInfo').style.display = 'none'
-                document.getElementById('userDisplay').style.display='none'
+                document.getElementById('userDisplay').style.display = 'none'
                 resetApp()
             }
         })
@@ -752,10 +826,10 @@
         function updateCashDisplay() {
             document.getElementById("startingCashDisplay").innerText = "$" + startingCash.toFixed(2)
             document.getElementById("currentCashDisplay").innerText = "$" + currentCash.toFixed(2)
-            if (currentUser&&tradingActive) {
-                const userRef=db.collection('users').doc(currentUser.uid)
+            if (currentUser && tradingActive) {
+                const userRef = db.collection('users').doc(currentUser.uid)
                 userRef.update({
-                    'tradingSeesion.currentCash':currentCash
+                    'tradingSeesion.currentCash': currentCash
                 })
             }
             if (currentCash < startingCash - 1000) {
@@ -1117,7 +1191,7 @@
             portfolio.push(trade)
             const userRef = db.collection('users').doc(currentUser.uid)
             userRef.update({
-                portfolio:portfolio
+                portfolio: portfolio
             })
             currentCash -= dollars
             renderTransactions()
@@ -1167,7 +1241,7 @@
             portfolio.push(trade)
             const userRef = db.collection('users').doc(currentUser.uid)
             userRef.update({
-                portfolio:portfolio
+                portfolio: portfolio
             })
             currentCash += dollars
             renderTransactions()
