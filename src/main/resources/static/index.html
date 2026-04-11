@@ -35,6 +35,8 @@
     <div id="startScreen" class="modal-overlay">
         <div class="modal-content">
             <h1>Stock Trading Simulator</h1>
+            <p>Enter Username for Leaderboards</p>
+            <input id="usernameInput" placeholder="Username">
             <p>Enter your starting cash amount</p>
             <input id="startingCashInput" type="number" placeholder="Enter amount ($)" min="100" step="0.01" />
             <button onclick="startTrading()">Start Trading</button>
@@ -615,6 +617,23 @@
         body.light-mode .theme-toggle:hover {
             background: #efefef;
         }
+
+        .leaderboard {
+            width: 85%;
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 25px;
+            background: #14161c;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .leaderboard-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #1f222a;
+        }
     </style>
 
     <script>
@@ -708,13 +727,15 @@
                 chart = null
             }
         }
-        function startTrading() {
+        async function startTrading() {
             const input = document.getElementById("startingCashInput").value
+            const user = document.getElementById("usernameInput").value
             const amount = parseFloat(input)
             if (!amount || amount < 100) {
                 alert("Enter amount of at least 100")
                 return
             }
+            username=user
             startingCash = amount
             currentCash = amount
             tradingActive = true
@@ -723,6 +744,7 @@
             userRef.set({
                 tradingSession: {
                     startingCash: startingCash,
+                    username:username,
                     currentCash: currentCash
                 },
                 portfolio: portfolio
@@ -817,7 +839,7 @@
             document.getElementById("sessionMessage").innerText =
                 reason === "LOSS"
                     ? "Your cash dropped $1000 below your starting amount. Game Over!"
-                    : "Game Over!"
+                    : "Forcing Restart"
 
             document.getElementById("finalStats").innerHTML = `
                 <div>Starting Cash: <strong>$${starting.toFixed(2)}</strong></div>
@@ -1128,6 +1150,14 @@
             })
             currentCash = startingCash - cashSpent
             const totalPortfolioValue = currentCash + totalStockValue
+            const profit=totalPortfolioValue-portfolio.startingCash
+            const percentGain=(profit/portfolio.startTrading)*100
+            if (uid) {
+                db.collection("users").doc(uid).update({
+                    currentValue:totalPortfolioValue,
+                    percentGain:percentGain
+                })
+            }
 
             document.getElementById("totalValue").innerText = "$" + totalPortfolioValue.toFixed(2)
             updateCashDisplay()
@@ -1221,7 +1251,46 @@
             document.getElementById("dollarAmount").value = ""
             console.log("portfolio: ", portfolio)
         }
+        function loadLeaderboard() {
+    db.collection("users")
+        .orderBy("percentGain", "desc")
+        .limit(10)
+        .onSnapshot(snapshot => {
+            const container = document.getElementById("leaderboardList")
+            container.innerHTML = ""
+
+            let rank = 1
+
+            snapshot.forEach(doc => {
+                const data = doc.data()
+
+                let medal = ""
+                if (rank === 1) medal = "🥇"
+                else if (rank === 2) medal = "🥈"
+                else if (rank === 3) medal = "🥉"
+
+                const row = document.createElement("div")
+                row.className = "leaderboard-row"
+
+                row.innerHTML = `
+                    <div>
+                        <span class="medal">${medal}</span>
+                        #${rank} ${data.username}
+                    </div>
+                    <div>${data.percentGain.toFixed(2)}%</div>
+                `
+
+                container.appendChild(row)
+                rank++
+            })
+        })
+}
+            loadLeaderboard()
     </script>
+    <div class="leaderboard">
+        <h2>Leaderboard</h2>
+        <div id="leaderboardList"></div>
+    </div>
 </body>
 
 </html>
