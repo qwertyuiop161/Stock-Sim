@@ -22,7 +22,7 @@ public class StockService {
             .uri(uriBuilder -> uriBuilder
                     .path("/query")
                     .queryParam("function", "SYMBOL_SEARCH")
-                    .queryParam("keyword", keywords)
+                    .queryParam("keywords", keywords)
                     .queryParam("apikey", getTimeBasedApiKey())
                     .build())
                 .retrieve()
@@ -39,6 +39,6 @@ public class StockService {
                     .build())
                 .retrieve()
                 .bodyToMono(String.class)
-                .block();
+                .block(); 
     }
 }

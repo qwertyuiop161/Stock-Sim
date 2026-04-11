@@ -19,8 +19,8 @@ public class StockController {
         return stockService.getDailyStock(symbol);
     }
     @GetMapping("/search")
-    public String search(@RequestParam String keywords) {
-        return stockService.searchSymbol(keywords);
+    public String search(@RequestParam String q) {
+        return stockService.searchSymbol(q);
     }
     @GetMapping("/overview")
     public String getOverview(@RequestParam(defaultValue = "AAPL") String symbol) {
