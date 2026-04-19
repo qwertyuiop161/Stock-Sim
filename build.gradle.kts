@@ -30,6 +30,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("com.fasterxml.jackson.core:jackson-databind")
+	implementation("com.google.firebase:firebase-admin:9.1.1")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

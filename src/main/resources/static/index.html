@@ -111,7 +111,22 @@
                 <button onclick="sellStock()">Sell</button>
             </div>
         </div>
-
+        <div id="limitOrderForm" style="display: none; margin-top: 20px;">
+            <h3>Place Limit Order</h3>
+            <input type="text" id="limitSymbol" placeholder="Symbol" value="">
+            <select id="limitType">
+                <option value="BUY">Buy</option>
+                <option value="SELL">Sell</option>
+            </select>
+            <input type="number" id="limitPrice" placeholder="Limit Price" step="0.01">
+            <input type="number" id="limitQuantity" placeholder="Quantity ($)" step="0.01">
+            <button onclick="placeLimitOrder()">Place Order</button>
+        </div>
+        <button onclick="toggleLimitOrderForm()" style="margin-top: 10px;">Show Limit Orders</button>
+        <div id="pendingOrders" style="margin-top: 20px">
+            <h3>Pending Orders</h3>
+            <div id="ordersList"></div>
+        </div>
         <div class="transactions-section">
             <h2>Transaction History</h2>
             <div class="transaction-header">
@@ -818,12 +833,12 @@
         }
 
         function updateCashDisplay() {
-            document.getElementById("startingCashDisplay").innerText = "$" + startingCash.toFixed(2)
-            document.getElementById("currentCashDisplay").innerText = "$" + currentCash.toFixed(2)
+            document.getElementById("startingCashDisplay").innerText="$"+startingCash.toFixed(2)
+            document.getElementById("currentCashDisplay").innerText="$"+startingCash.toFixed(2)
             if (currentUser && tradingActive) {
                 const userRef = db.collection('users').doc(currentUser.uid)
                 userRef.update({
-                    'tradingSeesion.currentCash': currentCash
+                    'tradingSession.currentCash':currentCash
                 })
             }
             if (currentCash < startingCash - 1000) {
@@ -1092,6 +1107,9 @@
             if (currentSymbol && tradingActive) {
                 loadStock(currentSymbol)
             }
+            if (currentUser) {
+                fetch('/api/check-orders?userId=' + currentUser.uid + '&symbol='+currentSymbol+'&price='+simulatedPrice)
+            }
         }, 60000)
 
         function renderTransactions() {
@@ -1150,10 +1168,10 @@
             })
             currentCash = startingCash - cashSpent
             const totalPortfolioValue = currentCash + totalStockValue
-            const profit=totalPortfolioValue-portfolio.startingCash
-            const percentGain=(profit/portfolio.startTrading)*100
-            if (uid) {
-                db.collection("users").doc(uid).update({
+            const profit=totalPortfolioValue-startingCash
+            const percentGain=(profit/startingCash)*100
+            if (currentUser) {
+                db.collection("users").doc(currentUser.uid).update({
                     currentValue:totalPortfolioValue,
                     percentGain:percentGain
                 })
@@ -1251,11 +1269,58 @@
             document.getElementById("dollarAmount").value = ""
             console.log("portfolio: ", portfolio)
         }
+        function toggleLimitOrderForm() {
+            const form = document.getElementById("limitOrderForm")
+            form.style.display = form.style.display === "none" ? "block" : "none"
+        }
+        async function placeLimitOrder() {
+            const symbol = document.getElementById("limitSymbol").value.toUpperCase()
+            const type = document.getElementById("limitType").value
+            const limitPrice = parseFloat(document.getElementById("limitPrice").value)
+            const quantity = parseFloat(document.getElementById("limitQuantity").value)
+            if (!symbol || !limitPrice || !quantity) {
+                return alert("Fill all fields")
+            }
+            const response = await fetch('/api/limit-order', {
+                method: 'POST',
+                headers: {
+                    'Content-type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({
+                    symbol,
+                    type,
+                    limitPrice,
+                    quantity,
+                    userId: currentUser.uid
+                })
+            })
+            if (response.ok) {
+                alert("Order placed")
+                loadPendingOrders()
+            }
+        }
+        async function loadPendingOrders() {
+            const response = await fetch('/api/limit-orders?userId='+currentUser.uid)
+            const orders = await response.json()
+            const container = document.getElementById("ordersList")
+            container.innerHTML=""
+            orders.forEach(order => {
+                const div = document.createElement("div");
+                div.innerHTML = `${order.type} ${order.symbol} at $${order.limitPrice} for $${order.quantity} <button onclick="cancelOrder('${order.id}')">Cancel</button>`;
+                container.appendChild(div);
+            });
+        }
+        async function cancelOrder(orderId) {
+            await fetch('/api/limit-order/' + orderId, {
+                method:'DELETE'
+            })
+            loadPendingOrders()
+        }
         function loadLeaderboard() {
-    db.collection("users")
-        .orderBy("percentGain", "desc")
-        .limit(10)
-        .onSnapshot(snapshot => {
+            db.collection("users")
+                .orderBy("percentGain", "desc")
+                .limit(10)
+                .onSnapshot(snapshot => {
             const container = document.getElementById("leaderboardList")
             container.innerHTML = ""
 
