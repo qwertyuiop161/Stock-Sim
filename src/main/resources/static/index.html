@@ -111,6 +111,14 @@
                 <button onclick="sellStock()">Sell</button>
             </div>
         </div>
+        <div class="watchlist-section">
+            <h3>Watchlist</h3>
+            <div class="watchlist-actions">
+                <button onclick="addToWatchlist()">Add Current Symbol</button>
+                <span class="watchlist-note">Save a stock to follow its latest price.</span>
+            </div>
+            <div id="watchlistList" class="watchlist-list"></div>
+        </div>
         <div id="limitOrderForm" style="display: none; margin-top: 20px;">
             <h3>Place Limit Order</h3>
             <input type="text" id="limitSymbol" placeholder="Symbol" value="">
@@ -649,6 +657,80 @@
             padding: 10px 0;
             border-bottom: 1px solid #1f222a;
         }
+
+        .watchlist-section {
+            margin-top: 24px;
+            padding: 18px;
+            background: #14161c;
+            border: 1px solid #1f222a;
+            border-radius: 12px;
+        }
+
+        .watchlist-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .watchlist-note {
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        .watchlist-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .watchlist-row {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr 1fr auto;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: #0f1115;
+            border: 1px solid #1f222a;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+
+        .watchlist-symbol {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .watchlist-change {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .watchlist-change.positive {
+            color: #00e676;
+        }
+
+        .watchlist-change.negative {
+            color: #ff5252;
+        }
+        
+        .watchlist-remove {
+            background: #1f222a;
+            border: 1px solid #2a2d36;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .watchlist-remove:hover {
+            background: #2a2d36;
+        }
+
+        .watchlist-empty {
+            color: #aaa;
+            padding: 12px 0;
+        }
     </style>
 
     <script>
@@ -679,6 +761,7 @@
         let sortedDates
         let chartType = "line"
         let portfolio = []
+        let watchlist = []
 
         function loadUserData() {
             if (!currentUser) return
@@ -690,10 +773,13 @@
                         startingCash = data.tradingSession.startingCash || 0
                         currentCash = data.tradingSession.currentCash || 0
                         portfolio = data.portfolio || []
+                        watchlist = data.watchlist || []
                         tradingActive = true
                         document.getElementById("startScreen").style.display = "none"
                         updateCashDisplay()
                         renderTransactions()
+                        renderWatchlist()
+                        loadWatchlistPrices()
                         refreshPortfolioValue()
                     } else {
                         document.getElementById("startScreen").style.display = "flex"
@@ -755,6 +841,7 @@
             currentCash = amount
             tradingActive = true
             portfolio = []
+            watchlist = []
             const userRef = db.collection('users').doc(currentUser.uid)
             userRef.set({
                 tradingSession: {
@@ -762,7 +849,8 @@
                     username:username,
                     currentCash: currentCash
                 },
-                portfolio: portfolio
+                portfolio: portfolio,
+                watchlist: watchlist
             },
                 {
                     merge: true
@@ -1129,7 +1217,67 @@
                 container.appendChild(row)
             })
         }
-
+        function renderWatchlist() {
+            const container = document.getElementById("watchlistList")
+            container.innerHTML = ""
+            if (!watchlist.length) {
+                container.innerHTML = "<div class='watchlist-empty'>No saved symbols yet. Add one when viewing a stock.</div>"
+                return
+            }
+            watchlist.forEach(symbol => {
+                const row = document.createElement("div")
+                row.className = "watchlist-row"
+                row.innerHTML = `
+                    <div class="watchlist-symbol">${symbol}</div>
+                    <div id="watchlist-price-${symbol}">Loading...</div>
+                    <div id="watchlist-change-${symbol}" class="watchlist-change">...</div>
+                    <button class="watchlist-remove" onclick="removeFromWatchlist('${symbol}')">Remove</button>
+                `
+                container.appendChild(row)
+            })
+        }
+        async function loadWatchlistPrices() {
+            if (!watchlist.length) {
+                return
+            }
+            for (const symbol of watchlist) {
+                const response = await fetch('/api/stock?symbol=' + symbol)
+                const data = await response.json()
+                const timeSeries = data["Time Series (Daily)"]
+                if (!timeSeries) {
+                    document.getElementById(`watchlist-price-${symbol}`).textContent = "N/A"
+                    document.getElementById(`watchlist-change-${symbol}`).textContent = ""
+                    continue
+                }
+                const dates = Object.keys(timeSeries).sort()
+                const latest = dates[dates.length - 1]
+                const prev = dates[dates.length - 2]
+                const latestPrice = parseFloat(timeSeries[latest]["4. close"])
+                const previousPrice = prev ? parseFloat(timeSeries[prev]["4. close"]) : latestPrice
+                const change = latestPrice - previousPrice
+                document.getElementById(`watchlist-price-${symbol}`).textContent = "$" + latestPrice.toFixed(2)
+                const changeElement = document.getElementById(`watchlist-change-${symbol}`)
+                changeElement.textContent = (change >= 0 ? "+" : "") + change.toFixed(2)
+                changeElement.className = "watchlist-change " + (change >= 0 ? "positive" : "negative")
+            }
+        }
+        async function addToWatchlist() {
+            const symbol = currentSymbol || document.getElementById("symbolInput").value.toUpperCase().trim()
+            if (!symbol) {
+                return alert("Load a stock first, or enter a symbol.")
+            }
+            if (watchlist.includes(symbol)) {
+                return alert(symbol + " is already on your watchlist.")
+            }
+            watchlist.push(symbol)
+            renderWatchlist()
+            await db.collection("users").doc(currentUser.uid).update({watchlist})
+        }
+        async function removeFromWatchlist(symbol) {
+            watchlist = watchlist.filter(s => s !== symbol)
+            renderWatchlist()
+            await db.collection("users").doc(currentUser.uid).update({watchlist})
+        }
         async function refreshPortfolioValue() {
             if (!tradingActive) return
 
