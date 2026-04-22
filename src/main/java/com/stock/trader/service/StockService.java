@@ -88,7 +88,8 @@ public class StockService {
                     DocumentReference userRef = firestore.collection("users").document(userId);
                     ApiFuture<com.google.cloud.firestore.DocumentSnapshot> userFuture = userRef.get();
                     Map<String, Object> userData = userFuture.get().getData();
-                    double currentCash = ((Number) userData.get("tradingSession.currentCash")).doubleValue();
+                    Map<String, Object> tradingSession = (Map<String, Object>) userData.get("tradingSession");
+                    double currentCash = ((Number) tradingSession.get("currentCash")).doubleValue();
                     List<Map<String, Object>> portfolio = (List<Map<String, Object>>) userData.get("portfolio");
                     if ("BUY".equals(type)) {
                         if (currentCash >= quantity) {
@@ -125,7 +126,9 @@ public class StockService {
                         }
                     }
                     userRef.update("portfolio", portfolio);
-                    userRef.update("tradingSession.currentCash", currentCash);
+                    Map<String, Object> updatedSession = new HashMap<>(tradingSession);
+                    updatedSession.put("currentCash", currentCash);
+                    userRef.update("tradingSession", updatedSession);
                     firestore.collection("orders").document(orderId).delete();
                 }
             }

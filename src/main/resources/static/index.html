@@ -922,7 +922,7 @@
 
         function updateCashDisplay() {
             document.getElementById("startingCashDisplay").innerText="$"+startingCash.toFixed(2)
-            document.getElementById("currentCashDisplay").innerText="$"+startingCash.toFixed(2)
+            document.getElementById("currentCashDisplay").innerText="$"+currentCash.toFixed(2)
             if (currentUser && tradingActive) {
                 const userRef = db.collection('users').doc(currentUser.uid)
                 userRef.update({
@@ -972,6 +972,14 @@
             currentSymbol = symbol
             fetch('/api/stock?symbol=' + symbol)
                 .then(res => res.json())
+                .then(jsonResponse => {
+                    if (!jsonResponse.success) {
+                        showToast(jsonResponse.error || "failed to show data", 'error');
+                        document.getElementById("loading").style.display = "none";
+                        return;
+                    }
+                    const data = JSON.parse(jsonResponse.data);
+                })
                 .then(data => {
 
                     if (data.Note) {
