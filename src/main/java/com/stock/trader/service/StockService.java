@@ -2,6 +2,7 @@ package com.stock.trader.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.beans.factory.annotation.Value;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
@@ -15,19 +16,15 @@ import java.util.concurrent.ExecutionException;
 public class StockService {
     private final WebClient webClient;
     private final Firestore firestore;
+    private final String apiKey = ""+Math.random()*100;
     
     public StockService(Firestore firestore) {
         this.firestore = firestore;
         this.webClient = WebClient.create("https://www.alphavantage.co");
     }
 
-    private String getTimeBasedApiKey() {
-        long currentMinute = System.currentTimeMillis() / (60 * 1000);
-        return "minute_" + currentMinute;
-    }
-
     public String getDailyStock(String symbol) {
-        return webClient.get().uri(uriBuilder -> uriBuilder.path("/query").queryParam("function", "TIME_SERIES_DAILY").queryParam("symbol", symbol).queryParam("apikey", getTimeBasedApiKey()).build())
+        return webClient.get().uri(uriBuilder -> uriBuilder.path("/query").queryParam("function", "TIME_SERIES_DAILY").queryParam("symbol", symbol).queryParam("apikey", apiKey).build())
         .retrieve()
         .bodyToMono(String.class)
         .block();
@@ -39,7 +36,7 @@ public class StockService {
                     .path("/query")
                     .queryParam("function", "SYMBOL_SEARCH")
                     .queryParam("keywords", keywords)
-                    .queryParam("apikey", getTimeBasedApiKey())
+                    .queryParam("apikey", apiKey)
                     .build())
                 .retrieve()
                 .bodyToMono(String.class)
@@ -52,7 +49,7 @@ public class StockService {
                     .path("/query")
                     .queryParam("function", "OVERVIEW")
                     .queryParam("symbol", symbol)
-                    .queryParam("apikey", getTimeBasedApiKey())
+                    .queryParam("apikey", apiKey)
                     .build())
                 .retrieve()
                 .bodyToMono(String.class)
@@ -87,10 +84,27 @@ public class StockService {
                 if (shouldExecute) {
                     DocumentReference userRef = firestore.collection("users").document(userId);
                     ApiFuture<com.google.cloud.firestore.DocumentSnapshot> userFuture = userRef.get();
-                    Map<String, Object> userData = userFuture.get().getData();
-                    Map<String, Object> tradingSession = (Map<String, Object>) userData.get("tradingSession");
+                    com.google.cloud.firestore.DocumentSnapshot userDoc = userFuture.get();
+                    if (!userDoc.exists()) {
+                        continue;
+                    }
+                    Map<String, Object> userData = userDoc.getData();
+                    if (userData == null) {
+                        continue;
+                    }
+                    Object tradingSessionObj = userData.get("tradingSession");
+                    if (!(tradingSessionObj instanceof Map)) {
+                        continue;
+                    }
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> tradingSession = (Map<String, Object>) tradingSessionObj;
                     double currentCash = ((Number) tradingSession.get("currentCash")).doubleValue();
-                    List<Map<String, Object>> portfolio = (List<Map<String, Object>>) userData.get("portfolio");
+                    Object portfolioObj = userData.get("portfolio");
+                    if (!(portfolioObj instanceof List)) {
+                        continue;
+                    }
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> portfolio = (List<Map<String, Object>>) portfolioObj;
                     if ("BUY".equals(type)) {
                         if (currentCash >= quantity) {
                             Map<String, Object> trade = new HashMap<>();

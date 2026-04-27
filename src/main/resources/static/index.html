@@ -1039,7 +1039,12 @@
                     document.getElementById("stockTitle").innerText = symbol
                     fetch('/api/overview?symbol=' + symbol)
                         .then(res => res.json())
-                        .then(data => {
+                        .then(jsonResponse => {
+                            if (!jsonResponse.success) {
+                                showToast(jsonResponse.error || "Failed to load overview", 'error');
+                                return;
+                            }
+                            const data = JSON.parse(jsonResponse.data);
                             document.getElementById("marketCap").innerText = data.MarketCapitalization
                             document.getElementById("eps").innerText = data.EPS
                             document.getElementById("pe").innerText = data.PERatio
@@ -1450,14 +1455,22 @@
                     userId: currentUser.uid
                 })
             })
-            if (response.ok) {
-                alert("Order placed")
-                loadPendingOrders()
+            const jsonResponse = await response.json();
+            if (jsonResponse.success) {
+                showToast("Order placed", 'success');
+                loadPendingOrders();
+            } else {
+                showToast(jsonResponse.error || "Failed to place order", 'error');
             }
         }
         async function loadPendingOrders() {
             const response = await fetch('/api/limit-orders?userId='+currentUser.uid)
-            const orders = await response.json()
+            const jsonResponse = await response.json();
+            if (!jsonResponse.success) {
+                showToast(jsonResponse.error || "Failed to load orders", 'error');
+                return;
+            }
+            const orders = jsonResponse.data;
             const container = document.getElementById("ordersList")
             container.innerHTML=""
             orders.forEach(order => {
@@ -1467,10 +1480,16 @@
             });
         }
         async function cancelOrder(orderId) {
-            await fetch('/api/limit-order/' + orderId, {
+            const response = await fetch('/api/limit-order/' + orderId, {
                 method:'DELETE'
             })
-            loadPendingOrders()
+            const jsonResponse = await response.json();
+            if (jsonResponse.success) {
+                showToast("Order canceled", 'success');
+                loadPendingOrders();
+            } else {
+                showToast(jsonResponse.error || "Failed to cancel order", 'error');
+            }
         }
         function loadLeaderboard() {
             db.collection("users")

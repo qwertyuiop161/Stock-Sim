@@ -14,7 +14,6 @@ import org.springframework.http.HttpStatus;
 import com.stock.trader.service.StockService;
 
 import com.google.cloud.firestore.QueryDocumentSnapshot;
-import com.google.protobuf.Api;
 import com.google.api.core.ApiFuture;
 
 import java.util.HashMap;
@@ -87,7 +86,7 @@ public class StockController {
         } catch (Exception e) {
             logger.error("error nerd ha", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ApiResponse<>(false, null, "Error: ", e.getMessage(), 400))
+                .body(new ApiResponse<>(false, null, "Error: " + e.getMessage(), 400));
         }
     }
     @GetMapping("/limit-orders")
@@ -114,11 +113,13 @@ public class StockController {
     }
     @DeleteMapping("/limit-order/{orderId}")
     public ResponseEntity<ApiResponse<String>> cancelLimitOrder(@PathVariable String orderId) {
-        try {
-            logger.info("cancel order {}", orderId);
+        try {            if (orderId == null || orderId.trim().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse<>(false, null, "Invalid order ID", 400));
+            }            logger.info("cancel order {}", orderId);
             stockService.getFirestore().collection("orders").document(orderId).delete();
             logger.info("canceled order {}", orderId);
-            return ResponseEntity.ok(new ApiResponse<>(true, "order canceled", null, 200))
+            return ResponseEntity.ok(new ApiResponse<>(true, "order canceled", null, 200));
         } catch (Exception e) {
             logger.error("error canceling: {}", orderId, e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -126,8 +127,16 @@ public class StockController {
         }
     }
     @PostMapping("/check-orders")
-    public void checkOrders(@RequestParam String userId, @RequestParam String symbol, @RequestParam double price) {
-        stockService.checkAndExecuteLimitOrders(userId, price, symbol);
+    public ResponseEntity<ApiResponse<String>> checkOrders(@RequestParam String userId, @RequestParam String symbol, @RequestParam double price) {
+        try {
+            logger.info("Checking orders for user: {} symbol: {} price: {}", userId, symbol, price);
+            stockService.checkAndExecuteLimitOrders(userId, price, symbol);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Orders checked", null, 200));
+        } catch (Exception e) {
+            logger.error("Error checking orders", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse<>(false, null, e.getMessage(), 400));
+        }
     }
     public static class ApiResponse<T> {
         private boolean success;
