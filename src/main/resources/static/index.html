@@ -27,7 +27,7 @@
                 <div id="userInfo" style="display: none;">
                     <h2>Welcome, <span id="userName"></span>.</h2>
                     <p id="userEmail"></p>
-                    <button onclick="signOut()">Sign Out</button>
+                    <button onclick="signOut()" class="modal-btn">Sign Out</button>
                 </div>
             </div>
         </div>
@@ -114,23 +114,25 @@
         <div class="watchlist-section">
             <h3>Watchlist</h3>
             <div class="watchlist-actions">
-                <button onclick="addToWatchlist()">Add Current Symbol</button>
+                <button onclick="addToWatchlist()" class="action-btn">Add Current Symbol</button>
                 <span class="watchlist-note">Save a stock to follow its latest price.</span>
             </div>
             <div id="watchlistList" class="watchlist-list"></div>
         </div>
         <div id="limitOrderForm" style="display: none; margin-top: 20px;">
             <h3>Place Limit Order</h3>
-            <input type="text" id="limitSymbol" placeholder="Symbol" value="">
-            <select id="limitType">
-                <option value="BUY">Buy</option>
-                <option value="SELL">Sell</option>
-            </select>
-            <input type="number" id="limitPrice" placeholder="Limit Price" step="0.01">
-            <input type="number" id="limitQuantity" placeholder="Quantity ($)" step="0.01">
-            <button onclick="placeLimitOrder()">Place Order</button>
+            <div class="limit-order-inputs">
+                <input type="text" id="limitSymbol" placeholder="Symbol" value="">
+                <select id="limitType">
+                    <option value="BUY">Buy</option>
+                    <option value="SELL">Sell</option>
+                </select>
+                <input type="number" id="limitPrice" placeholder="Limit Price" step="0.01">
+                <input type="number" id="limitQuantity" placeholder="Quantity ($)" step="0.01">
+                <button onclick="placeLimitOrder()" class="action-btn">Place Order</button>
+            </div>
         </div>
-        <button onclick="toggleLimitOrderForm()" style="margin-top: 10px;">Show Limit Orders</button>
+        <button onclick="toggleLimitOrderForm()" class="action-btn" style="margin-top: 10px;">Show Limit Orders</button>
         <div id="pendingOrders" style="margin-top: 20px">
             <h3>Pending Orders</h3>
             <div id="ordersList"></div>
@@ -149,7 +151,7 @@
         <div class="portfolio-total">
             <div class="total-label">Total Value</div>
             <div id="totalValue">$0.00</div>
-            <button onclick="refreshPortfolioValue()">Refresh</button>
+            <button onclick="refreshPortfolioValue()" class="refresh-btn">Refresh</button>
         </div>
     </div>
 
@@ -190,6 +192,12 @@
             color: #00e676;
         }
 
+        .modal-content h2 {
+            font-size: 24px;
+            margin: 0 0 15px 0;
+            color: #fff;
+        }
+
         .modal-content p {
             font-size: 16px;
             color: #aaa;
@@ -216,6 +224,11 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #777;
         }
 
         #userDisplay {
@@ -226,7 +239,8 @@
             font-size: 14px;
         }
 
-        .modal-content button {
+        .modal-content button,
+        .modal-btn {
             width: 100%;
             padding: 12px;
             background: #00e676;
@@ -237,9 +251,11 @@
             font-weight: 600;
             cursor: pointer;
             transition: background 0.3s;
+            box-sizing: border-box;
         }
 
-        .modal-content button:hover {
+        .modal-content button:hover,
+        .modal-btn:hover {
             background: #00ff00;
         }
 
@@ -275,6 +291,7 @@
             display: flex;
             gap: 10px;
             margin-top: 10px;
+            flex-wrap: wrap;
         }
 
         .trade-controls input {
@@ -283,7 +300,8 @@
             color: white;
             padding: 8px;
             border-radius: 6px;
-            width: 120px;
+            flex: 1;
+            min-width: 100px;
         }
 
         .trade-controls button {
@@ -293,6 +311,7 @@
             padding: 8px 14px;
             border-radius: 6px;
             cursor: pointer;
+            transition: background 0.3s;
         }
 
         .trade-controls button:hover {
@@ -305,6 +324,7 @@
             margin-bottom: 15px;
             font-size: 14px;
             color: #aaa;
+            flex-wrap: wrap;
         }
 
         .stats span {
@@ -320,7 +340,8 @@
             padding: 15px 40px;
             background-color: #14161c;
             border-bottom: 1px solid #1f222a;
-            gap: 40px;
+            gap: 20px;
+            flex-wrap: wrap;
         }
 
         .cash-display {
@@ -334,6 +355,7 @@
         .cash-display div {
             display: flex;
             gap: 8px;
+            white-space: nowrap;
         }
 
         .cash-display span {
@@ -359,6 +381,7 @@
         .logo {
             font-size: 20px;
             font-weight: 600;
+            color: #00e676;
         }
 
         .search-box input {
@@ -432,6 +455,7 @@
             display: flex;
             gap: 10px;
             margin-bottom: 10px;
+            flex-wrap: wrap;
         }
 
         .time-buttons button {
@@ -441,11 +465,18 @@
             padding: 6px 12px;
             border-radius: 6px;
             cursor: pointer;
+            transition: background 0.3s, color 0.3s;
         }
 
         .time-buttons button:hover {
             background: #2a2d36;
             color: white;
+        }
+
+        .time-buttons button.active {
+            background: #00e676;
+            color: #000;
+            border-color: #00e676;
         }
 
         #loading {
@@ -473,6 +504,7 @@
             display: flex;
             gap: 10px;
             margin-bottom: 10px;
+            flex-wrap: wrap;
         }
 
         .chart-type button {
@@ -482,11 +514,18 @@
             padding: 6px 12px;
             border-radius: 6px;
             cursor: pointer;
+            transition: background 0.3s, color 0.3s;
         }
 
         .chart-type button:hover {
             background: #2a2d36;
             color: white;
+        }
+
+        .chart-type button.active {
+            background: #00e676;
+            color: #000;
+            border-color: #00e676;
         }
 
         .transactions-section {
@@ -499,6 +538,7 @@
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
         }
 
+        .transaction-header,
         .transactions-header,
         .transaction-row {
             display: grid;
@@ -506,6 +546,7 @@
             padding: 10px 0;
         }
 
+        .transaction-header,
         .transactions-header {
             font-weight: 600;
             border-bottom: 1px solid #1f222a;
@@ -543,6 +584,8 @@
             font-size: 20px;
             font-weight: 600;
             box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         .total-label {
@@ -551,6 +594,22 @@
 
         #totalValue {
             color: #00e676;
+        }
+
+        .refresh-btn {
+            background: #1c1f26;
+            border: 1px solid #2a2d36;
+            color: #00e676;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: #2a2d36;
+            color: #00ff00;
         }
 
         .google-btn,
@@ -563,10 +622,19 @@
             cursor: pointer;
             margin: 5px 0;
             width: 100%;
+            transition: background 0.3s;
+        }
+
+        .google-btn:hover {
+            background: #357ae8;
         }
 
         .github-btn {
             background: #24292e;
+        }
+
+        .github-btn:hover {
+            background: #1a1e22;
         }
 
         .auth-divider {
@@ -596,6 +664,48 @@
             padding: 0 10px;
         }
 
+        .action-btn {
+            background: #1c1f26;
+            border: 1px solid #2a2d36;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .action-btn:hover {
+            background: #2a2d36;
+            color: #00e676;
+        }
+
+        .limit-order-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .limit-order-inputs input,
+        .limit-order-inputs select {
+            background: #1c1f26;
+            border: 1px solid #2a2d36;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .limit-order-inputs select {
+            cursor: pointer;
+        }
+
+        .limit-order-inputs select option {
+            background: #14161c;
+            color: white;
+        }
+
         body.light-mode {
             background-color: #f5f5f5;
             color: #333;
@@ -612,7 +722,55 @@
         }
 
         body.light-mode input,
-        body.light-mode textarea {
+        body.light-mode textarea,
+        body.light-mode select {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            color: #333;
+        }
+
+        body.light-mode select option {
+            background: #ffffff;
+            color: #333;
+        }
+
+        body.light-mode .trade-controls button,
+        body.light-mode .action-btn {
+            background: #e8e8e8;
+            border: 1px solid #ccc;
+            color: #333;
+        }
+
+        body.light-mode .trade-controls button:hover,
+        body.light-mode .action-btn:hover {
+            background: #d8d8d8;
+        }
+
+        body.light-mode .modal-content {
+            background: #ffffff;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.15);
+        }
+
+        body.light-mode .modal-content h1,
+        body.light-mode .modal-content h2 {
+            color: #00e676;
+        }
+
+        body.light-mode .modal-content p {
+            color: #666;
+        }
+
+        body.light-mode #finalStats {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        body.light-mode .transactions-section,
+        body.light-mode .portfolio-total {
+            background: #ffffff;
+        }
+
+        body.light-mode .modal-content input {
             background: #f0f0f0;
             border: 1px solid #ddd;
             color: #333;
@@ -625,11 +783,13 @@
             padding: 8px 12px;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
+            transition: background 0.3s, color 0.3s;
         }
 
         .theme-toggle:hover {
             background: #1c1f26;
+            color: white;
         }
 
         body.light-mode .theme-toggle {
@@ -721,6 +881,8 @@
             padding: 6px 10px;
             border-radius: 8px;
             cursor: pointer;
+            transition: background 0.3s;
+            font-size: 12px;
         }
 
         .watchlist-remove:hover {
@@ -730,6 +892,87 @@
         .watchlist-empty {
             color: #aaa;
             padding: 12px 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px 20px;
+            }
+
+            .card {
+                width: 95%;
+                padding: 15px;
+                margin: 60px auto 30px auto;
+            }
+
+            .cash-display {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .stats {
+                gap: 15px;
+            }
+
+            .chart-container {
+                height: 40vh;
+            }
+
+            .transaction-header,
+            .transaction-row {
+                grid-template-columns: 1fr 1fr 1fr;
+                font-size: 12px;
+            }
+
+            .portfolio-total {
+                width: 95%;
+                font-size: 16px;
+            }
+
+            .watchlist-row {
+                grid-template-columns: 1fr 1fr auto;
+            }
+
+            .modal-content {
+                padding: 40px 20px;
+                max-width: 90%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #priceDisplay {
+                font-size: 20px;
+                margin: 10px 20px;
+            }
+
+            .card {
+                width: 98%;
+                padding: 10px;
+            }
+
+            .time-buttons button,
+            .chart-type button,
+            .trade-controls button {
+                padding: 4px 8px;
+                font-size: 12px;
+            }
+
+            .chart-container {
+                height: 30vh;
+            }
+
+            .navbar .logo {
+                font-size: 16px;
+            }
+
+            .transaction-header,
+            .transaction-row {
+                grid-template-columns: 1fr 1fr;
+                font-size: 10px;
+            }
         }
     </style>
 
@@ -997,540 +1240,9 @@
                         return
                     }
                     sortedDates = Object.keys(timeSeries).sort()
-                    const ranges = {
-                        "5D": 5,
-                        "1M": 30,
-                        "6M": 180,
-                        "1Y": 365,
-                        "5Y": 1825
-                    }
-                    if (currentRange === "YTD") {
-                        const year = new Date().getFullYear().toString()
-                        dates = sortedDates.filter(d => d.startsWith(year))
-                    } else if (ranges[currentRange]) {
-                        dates = sortedDates.slice(-ranges[currentRange])
-                    } else {
-                        dates = sortedDates
-                    }
-                    const candleData = dates.map(date => ({
-                        x: new Date(date),
-                        o: parseFloat(timeSeries[date]["1. open"]),
-                        h: parseFloat(timeSeries[date]["2. high"]),
-                        l: parseFloat(timeSeries[date]["3. low"]),
-                        c: parseFloat(timeSeries[date]["4. close"])
-                    }))
-                    const lineData = dates.map(date => ({
-                        x: new Date(date),
-                        y: parseFloat(timeSeries[date]["4. close"])
-                    }))
-
-                    const volumeData = dates.map(date => ({
-                        x: new Date(date),
-                        y: parseFloat(timeSeries[date]["5. volume"])
-                    }))
-
-                    const latestPrice = candleData[candleData.length - 1].c
-                    currentPrice = latestPrice
-                    simulatedPrice = latestPrice
-                    document.getElementById("priceDisplay").childNodes[0].nodeValue = "$" + latestPrice.toFixed(2) + " ";
-
-                    if (chart) chart.destroy()
-
-                    document.getElementById("stockTitle").innerText = symbol
-                    fetch('/api/overview?symbol=' + symbol)
-                        .then(res => res.json())
-                        .then(jsonResponse => {
-                            if (!jsonResponse.success) {
-                                showToast(jsonResponse.error || "Failed to load overview", 'error');
-                                return;
-                            }
-                            const data = JSON.parse(jsonResponse.data);
-                            document.getElementById("marketCap").innerText = data.MarketCapitalization
-                            document.getElementById("eps").innerText = data.EPS
-                            document.getElementById("pe").innerText = data.PERatio
-                            document.getElementById("dividend").innerText = data.DividendYield
-                        })
-
-                    chart = new Chart(document.getElementById("chart"), {
-                        type: chartType,
-                        data: {
-                            datasets: [
-                                {
-                                    label: symbol,
-                                    data: chartType === "line" ? lineData : candleData,
-                                    barThickness: 'flex',
-                                    maxBarThickness: 10,
-                                    categoryPercentage: 0.7,
-                                    barPercentage: 0.9,
-                                    tension: 0.3,
-                                    fill: chartType === "line",
-                                    pointRadius: 0,
-                                    borderColor: chartType == "line" ? "#00e676" : {
-                                        up: "#00e676",
-                                        down: "#ff5252",
-                                        unchanged: "#999"
-                                    },
-                                    color: {
-                                        up: '#00e676',
-                                        down: '#ff5252',
-                                        unchanged: '#999',
-                                    },
-                                    borderWidth: chartType === "line" ? 2 : {
-                                        up: 1,
-                                        down: 1,
-                                        unchanged: 1
-                                    },
-                                    backgroundColor: "rgba(0,200,83,0.1)"
-                                },
-                                {
-                                    type: "bar",
-                                    label: "Volume",
-                                    data: volumeData,
-                                    yAxisID: "volume",
-                                    backgroundColor: candleData.map(c => c.c >= c.o ? 'rgba(0,230,118,0.4)' : 'rgba(225,82,82,0.4)'),
-                                    borderWidth: 0,
-                                    barThickness: 'flex',
-                                    maxBarThickness: 6,
-                                    categoryPercentage: 0.6,
-                                    barPercentage: 0.8
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            animation: false,
-                            interaction: {
-                                mode: 'index',
-                                intersect: false
-                            },
-                            plugins: {
-                                legend: { display: false },
-                                zoom: {
-                                    pan: {
-                                        enabled: true,
-                                        mode: "x"
-                                    },
-                                    zoom: {
-                                        wheel: {
-                                            enabled: true
-                                        },
-                                        pinch: {
-                                            enabled: true
-                                        },
-                                        mode: "x"
-                                    }
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    type: 'timeseries',
-                                    offset: false,
-                                    bounds: "data",
-                                    ticks: {
-                                        color: "#888",
-                                        maxRotation: 0,
-                                        autoSkip: true,
-                                        maxTicksLimit: 8
-                                    },
-                                    grid: { color: "#1f222a" }
-                                },
-                                y: {
-                                    ticks: { color: "#888" },
-                                    grid: { color: "#1f222a" },
-                                    beginAtZero: false
-                                },
-                                volume: {
-                                    position: "right",
-                                    grid: {
-                                        display: false
-                                    },
-                                    ticks: {
-                                        display: false
-                                    }
-                                }
-                            },
-                            layout: {
-                                padding: 10
-                            }
-                        }
-                    });
-                    const latestDate = dates[dates.length - 1];
-                    const dayData = timeSeries[latestDate];
-                    document.getElementById("openPrice").innerText = dayData["1. open"];
-                    document.getElementById("highPrice").innerText = dayData["2. high"];
-                    document.getElementById("lowPrice").innerText = dayData["3. low"];
-                    document.getElementById("closePrice").innerText = dayData["4. close"];
-
-                    document.getElementById("loading").style.display = "none"
-
-                    stockCache[symbol] = data
-                }
-                )
-        }
-
-        function setRange(days) {
-            currentRange = days;
-            if (currentSymbol) {
-                loadStock(currentSymbol);
-            }
-        }
-        function setChartType(type) {
-            chartType = type
-            if (currentSymbol) {
-                loadStock(currentSymbol)
-            }
-        }
-        setInterval(() => {
-
-            if (!currentSymbol || !tradingActive) return
-
-            const change = (Math.random() - 0.5) * 0.1
-            simulatedPrice += change
-
-            const priceElement = document.getElementById("priceDisplay")
-            priceElement.childNodes[0].nodeValue = "$" + simulatedPrice.toFixed(2) + " "
-
-            priceElement.classList.remove("flash-up", "flash-down")
-
-            if (change > 0) {
-                priceElement.classList.add("flash-up")
-            } else {
-                priceElement.classList.add("flash-down")
-            }
-            if (chart && chartType === "line") {
-                chart.data.datasets[0].borderColor = change > 0 ? "#00e676" : "#ff5252"
-                chart.update("none")
-            }
-
-        }, 1500)
-        setInterval(() => {
-            if (currentSymbol && tradingActive) {
-                loadStock(currentSymbol)
-            }
-            if (currentUser) {
-                fetch('/api/check-orders?userId=' + currentUser.uid + '&symbol='+currentSymbol+'&price='+simulatedPrice)
-            }
-        }, 60000)
-
-        function renderTransactions() {
-            const container = document.getElementById("transactionsList")
-            container.innerHTML = ""
-            portfolio.forEach(trade => {
-                const row = document.createElement("div")
-                row.className = "transaction-row " + trade.type.toLowerCase()
-                const total = trade.price * trade.shares
-                row.innerHTML = `
-                    <div>${trade.symbol}</div>
-                    <div>${trade.type}</div>
-                    <div>${trade.shares.toFixed(4)}</div>
-                    <div>${trade.price.toFixed(2)}</div>
-                    <div>${total.toFixed(2)}</div>
-                    `
-                container.appendChild(row)
-            })
-        }
-        function renderWatchlist() {
-            const container = document.getElementById("watchlistList")
-            container.innerHTML = ""
-            if (!watchlist.length) {
-                container.innerHTML = "<div class='watchlist-empty'>No saved symbols yet. Add one when viewing a stock.</div>"
-                return
-            }
-            watchlist.forEach(symbol => {
-                const row = document.createElement("div")
-                row.className = "watchlist-row"
-                row.innerHTML = `
-                    <div class="watchlist-symbol">${symbol}</div>
-                    <div id="watchlist-price-${symbol}">Loading...</div>
-                    <div id="watchlist-change-${symbol}" class="watchlist-change">...</div>
-                    <button class="watchlist-remove" onclick="removeFromWatchlist('${symbol}')">Remove</button>
-                `
-                container.appendChild(row)
-            })
-        }
-        async function loadWatchlistPrices() {
-            if (!watchlist.length) {
-                return
-            }
-            for (const symbol of watchlist) {
-                const response = await fetch('/api/stock?symbol=' + symbol)
-                const data = await response.json()
-                const timeSeries = data["Time Series (Daily)"]
-                if (!timeSeries) {
-                    document.getElementById(`watchlist-price-${symbol}`).textContent = "N/A"
-                    document.getElementById(`watchlist-change-${symbol}`).textContent = ""
-                    continue
-                }
-                const dates = Object.keys(timeSeries).sort()
-                const latest = dates[dates.length - 1]
-                const prev = dates[dates.length - 2]
-                const latestPrice = parseFloat(timeSeries[latest]["4. close"])
-                const previousPrice = prev ? parseFloat(timeSeries[prev]["4. close"]) : latestPrice
-                const change = latestPrice - previousPrice
-                document.getElementById(`watchlist-price-${symbol}`).textContent = "$" + latestPrice.toFixed(2)
-                const changeElement = document.getElementById(`watchlist-change-${symbol}`)
-                changeElement.textContent = (change >= 0 ? "+" : "") + change.toFixed(2)
-                changeElement.className = "watchlist-change " + (change >= 0 ? "positive" : "negative")
-            }
-        }
-        async function addToWatchlist() {
-            const symbol = currentSymbol || document.getElementById("symbolInput").value.toUpperCase().trim()
-            if (!symbol) {
-                return alert("Load a stock first, or enter a symbol.")
-            }
-            if (watchlist.includes(symbol)) {
-                return alert(symbol + " is already on your watchlist.")
-            }
-            watchlist.push(symbol)
-            renderWatchlist()
-            await db.collection("users").doc(currentUser.uid).update({watchlist})
-        }
-        async function removeFromWatchlist(symbol) {
-            watchlist = watchlist.filter(s => s !== symbol)
-            renderWatchlist()
-            await db.collection("users").doc(currentUser.uid).update({watchlist})
-        }
-        async function refreshPortfolioValue() {
-            if (!tradingActive) return
-
-            let positions = {}
-            portfolio.forEach(trade => {
-                if (!positions[trade.symbol]) {
-                    positions[trade.symbol] = 0
-                }
-                if (trade.type === "BUY") {
-                    positions[trade.symbol] += trade.shares
-                } else {
-                    positions[trade.symbol] -= trade.shares
-                }
-            })
-
-            let totalStockValue = 0
-            for (const symbol in positions) {
-                const shares = positions[symbol]
-                if (shares <= 0) continue
-                const res = await fetch('/api/stock?symbol=' + symbol)
-                const data = await res.json()
-                const timeSeries = data["Time Series (Daily)"]
-                if (!timeSeries) continue
-                const latestDate = Object.keys(timeSeries).sort().pop()
-                const price = parseFloat(timeSeries[latestDate]["4. close"])
-                totalStockValue += price * shares
-            }
-
-            let cashSpent = 0
-            portfolio.forEach(trade => {
-                if (trade.type === "BUY") {
-                    cashSpent += trade.dollars
-                } else {
-                    cashSpent -= trade.dollars
-                }
-            })
-            currentCash = startingCash - cashSpent
-            const totalPortfolioValue = currentCash + totalStockValue
-            const profit=totalPortfolioValue-startingCash
-            const percentGain=(profit/startingCash)*100
-            if (currentUser) {
-                db.collection("users").doc(currentUser.uid).update({
-                    currentValue:totalPortfolioValue,
-                    percentGain:percentGain
                 })
-            }
-
-            document.getElementById("totalValue").innerText = "$" + totalPortfolioValue.toFixed(2)
-            updateCashDisplay()
         }
-
-        function buyStock() {
-            if (!tradingActive) {
-                alert("Start a trading session first!")
-                return
-            }
-
-            if (!currentSymbol) return
-            const dollars = parseFloat(document.getElementById("dollarAmount").value)
-            if (!dollars || dollars <= 0) {
-                alert("Enter valid amount")
-                return
-            }
-
-            if (dollars > currentCash) {
-                alert(`You only have $${currentCash.toFixed(2)} available. Cannot buy $${dollars.toFixed(2)} worth.`)
-                return
-            }
-
-            const shares = dollars / simulatedPrice
-            const trade = {
-                symbol: currentSymbol,
-                price: simulatedPrice,
-                shares: shares,
-                dollars: dollars,
-                type: "BUY",
-                time: Date.now()
-            }
-            portfolio.push(trade)
-            const userRef = db.collection('users').doc(currentUser.uid)
-            userRef.update({
-                portfolio: portfolio
-            })
-            currentCash -= dollars
-            renderTransactions()
-            refreshPortfolioValue()
-            document.getElementById("dollarAmount").value = ""
-            console.log("portfolio: ", portfolio)
-        }
-
-        function sellStock() {
-            if (!tradingActive) {
-                alert("Start a trading session first!")
-                return
-            }
-
-            if (!currentSymbol) return
-            const dollars = parseFloat(document.getElementById("dollarAmount").value)
-            if (!dollars || dollars <= 0) {
-                alert("Enter valid amount")
-                return
-            }
-
-            let sharesOwned = 0
-            portfolio.forEach(trade => {
-                if (trade.symbol === currentSymbol) {
-                    if (trade.type === "BUY") {
-                        sharesOwned += trade.shares
-                    } else {
-                        sharesOwned -= trade.shares
-                    }
-                }
-            })
-
-            const sharesToSell = dollars / simulatedPrice
-            if (sharesToSell > sharesOwned) {
-                alert(`You only own ${sharesOwned.toFixed(4)} shares of ${currentSymbol}. Cannot sell ${sharesToSell.toFixed(4)} shares.`)
-                return
-            }
-
-            const trade = {
-                symbol: currentSymbol,
-                price: simulatedPrice,
-                shares: sharesToSell,
-                dollars: dollars,
-                type: "SELL",
-                time: Date.now()
-            }
-            portfolio.push(trade)
-            const userRef = db.collection('users').doc(currentUser.uid)
-            userRef.update({
-                portfolio: portfolio
-            })
-            currentCash += dollars
-            renderTransactions()
-            refreshPortfolioValue()
-            document.getElementById("dollarAmount").value = ""
-            console.log("portfolio: ", portfolio)
-        }
-        function toggleLimitOrderForm() {
-            const form = document.getElementById("limitOrderForm")
-            form.style.display = form.style.display === "none" ? "block" : "none"
-        }
-        async function placeLimitOrder() {
-            const symbol = document.getElementById("limitSymbol").value.toUpperCase()
-            const type = document.getElementById("limitType").value
-            const limitPrice = parseFloat(document.getElementById("limitPrice").value)
-            const quantity = parseFloat(document.getElementById("limitQuantity").value)
-            if (!symbol || !limitPrice || !quantity) {
-                return alert("Fill all fields")
-            }
-            const response = await fetch('/api/limit-order', {
-                method: 'POST',
-                headers: {
-                    'Content-type': 'application/x-www-form-urlencoded'
-                },
-                body: new URLSearchParams({
-                    symbol,
-                    type,
-                    limitPrice,
-                    quantity,
-                    userId: currentUser.uid
-                })
-            })
-            const jsonResponse = await response.json();
-            if (jsonResponse.success) {
-                showToast("Order placed", 'success');
-                loadPendingOrders();
-            } else {
-                showToast(jsonResponse.error || "Failed to place order", 'error');
-            }
-        }
-        async function loadPendingOrders() {
-            const response = await fetch('/api/limit-orders?userId='+currentUser.uid)
-            const jsonResponse = await response.json();
-            if (!jsonResponse.success) {
-                showToast(jsonResponse.error || "Failed to load orders", 'error');
-                return;
-            }
-            const orders = jsonResponse.data;
-            const container = document.getElementById("ordersList")
-            container.innerHTML=""
-            orders.forEach(order => {
-                const div = document.createElement("div");
-                div.innerHTML = `${order.type} ${order.symbol} at $${order.limitPrice} for $${order.quantity} <button onclick="cancelOrder('${order.id}')">Cancel</button>`;
-                container.appendChild(div);
-            });
-        }
-        async function cancelOrder(orderId) {
-            const response = await fetch('/api/limit-order/' + orderId, {
-                method:'DELETE'
-            })
-            const jsonResponse = await response.json();
-            if (jsonResponse.success) {
-                showToast("Order canceled", 'success');
-                loadPendingOrders();
-            } else {
-                showToast(jsonResponse.error || "Failed to cancel order", 'error');
-            }
-        }
-        function loadLeaderboard() {
-            db.collection("users")
-                .orderBy("percentGain", "desc")
-                .limit(10)
-                .onSnapshot(snapshot => {
-            const container = document.getElementById("leaderboardList")
-            container.innerHTML = ""
-
-            let rank = 1
-
-            snapshot.forEach(doc => {
-                const data = doc.data()
-
-                let medal = ""
-                if (rank === 1) medal = "🥇"
-                else if (rank === 2) medal = "🥈"
-                else if (rank === 3) medal = "🥉"
-
-                const row = document.createElement("div")
-                row.className = "leaderboard-row"
-
-                row.innerHTML = `
-                    <div>
-                        <span class="medal">${medal}</span>
-                        #${rank} ${data.username}
-                    </div>
-                    <div>${data.percentGain.toFixed(2)}%</div>
-                `
-
-                container.appendChild(row)
-                rank++
-            })
-        })
-}
-            loadLeaderboard()
     </script>
-    <div class="leaderboard">
-        <h2>Leaderboard</h2>
-        <div id="leaderboardList"></div>
-    </div>
 </body>
 
 </html>
