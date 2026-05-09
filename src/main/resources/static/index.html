@@ -4,10 +4,10 @@
 <head>
     <title>Stock Drafter</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.1.1"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
@@ -88,17 +88,17 @@
             <div>Dividend Yield <span id="dividend"></span></div>
         </div>
         <div class="time-buttons">
-            <button onclick="setRange('5D')">5D</button>
-            <button onclick="setRange('1M')">1M</button>
-            <button onclick="setRange('6M')">6M</button>
-            <button onclick="setRange('YTD')">YTD</button>
-            <button onclick="setRange('1Y')">1Y</button>
-            <button onclick="setRange('5Y')">5Y</button>
-            <button onclick="setRange('ALL')">ALL</button>
+            <button onclick="setRange('5D')" class="range-btn" data-range="5D">5D</button>
+            <button onclick="setRange('1M')" class="range-btn" data-range="1M">1M</button>
+            <button onclick="setRange('6M')" class="range-btn" data-range="6M">6M</button>
+            <button onclick="setRange('YTD')" class="range-btn" data-range="YTD">YTD</button>
+            <button onclick="setRange('1Y')" class="range-btn" data-range="1Y">1Y</button>
+            <button onclick="setRange('5Y')" class="range-btn" data-range="5Y">5Y</button>
+            <button onclick="setRange('ALL')" class="range-btn" data-range="ALL">ALL</button>
         </div>
         <div class="chart-type">
-            <button onclick="setChartType('line')">Line</button>
-            <button onclick="setChartType('candlestick')">Candles</button>
+            <button onclick="setChartType('line')" class="type-btn" data-type="line">Line</button>
+            <button onclick="setChartType('candlestick')" class="type-btn" data-type="candlestick">Candles</button>
         </div>
         <div class="chart-container">
             <canvas id="chart"></canvas>
@@ -429,6 +429,17 @@
             position: relative;
             height: 60vh;
             width: 100%;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #0f1115;
+            border-radius: 8px;
+            border: 1px solid #1f222a;
+        }
+
+        #chart {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
         }
 
         #priceDisplay {
@@ -458,7 +469,8 @@
             flex-wrap: wrap;
         }
 
-        .time-buttons button {
+        .time-buttons button,
+        .range-btn {
             background: #1c1f26;
             border: 1px solid #2a2d36;
             color: #aaa;
@@ -468,21 +480,25 @@
             transition: background 0.3s, color 0.3s;
         }
 
-        .time-buttons button:hover {
+        .time-buttons button:hover,
+        .range-btn:hover {
             background: #2a2d36;
             color: white;
         }
 
-        .time-buttons button.active {
+        .time-buttons button.active,
+        .range-btn.active {
             background: #00e676;
             color: #000;
             border-color: #00e676;
+            font-weight: 600;
         }
 
         #loading {
             display: none;
             margin: 20px 40px;
             color: #aaa;
+            font-weight: 600;
         }
 
         .fundamentals {
@@ -507,7 +523,8 @@
             flex-wrap: wrap;
         }
 
-        .chart-type button {
+        .chart-type button,
+        .type-btn {
             background: #1c1f26;
             border: 1px solid #2a2d36;
             color: #aaa;
@@ -517,15 +534,18 @@
             transition: background 0.3s, color 0.3s;
         }
 
-        .chart-type button:hover {
+        .chart-type button:hover,
+        .type-btn:hover {
             background: #2a2d36;
             color: white;
         }
 
-        .chart-type button.active {
+        .chart-type button.active,
+        .type-btn.active {
             background: #00e676;
             color: #000;
             border-color: #00e676;
+            font-weight: 600;
         }
 
         .transactions-section {
@@ -776,6 +796,11 @@
             color: #333;
         }
 
+        body.light-mode .chart-container {
+            background: #f9f9f9;
+            border-color: #ddd;
+        }
+
         .theme-toggle {
             background: none;
             border: 1px solid #2a2d36;
@@ -995,7 +1020,8 @@
         let tradingActive = false
 
         const stockCache = {}
-        let chart
+        let chart = null
+        let chartInstance = null
         let currentPrice = 0
         let simulatedPrice = 0
         let currentSymbol = null
@@ -1005,6 +1031,20 @@
         let chartType = "line"
         let portfolio = []
         let watchlist = []
+        let chartData = null
+        let isChartRendering = false
+
+        function destroyChart() {
+            try {
+                if (chartInstance) {
+                    chartInstance.destroy()
+                    chartInstance = null
+                }
+                chart = null
+            } catch (e) {
+                console.log("Chart destroy error:", e)
+            }
+        }
 
         function loadUserData() {
             if (!currentUser) return
@@ -1035,19 +1075,25 @@
             })
             loadThemePreference()
         }
+
         function toggleDarkMode() {
             const isDarkMode = document.body.classList.toggle('light-mode')
             localStorage.setItem('theme', isDarkMode ? 'light' : 'dark')
             updateThemeIcon()
-        }
-        function updateThemeIcon() {
-            const icon = document.querySelector('.theme-toggle');
-            if (document.body.classList.contains('light-mode')) {
-                icon.textContent = 'Light';
-            } else {
-                icon.textContent = 'Dark';
+            if (chartData) {
+                renderChart()
             }
         }
+
+        function updateThemeIcon() {
+            const icon = document.querySelector('.theme-toggle')
+            if (document.body.classList.contains('light-mode')) {
+                icon.textContent = 'Light'
+            } else {
+                icon.textContent = 'Dark'
+            }
+        }
+
         function loadThemePreference() {
             const savedTheme  = localStorage.getItem('theme')
             if (savedTheme==='light') {
@@ -1055,22 +1101,23 @@
             }
             updateThemeIcon()
         }
+
         function resetApp() {
             startingCash = 0
             currentCash = 0
             tradingActive = false
             portfolio = []
             simulatedPrice = 0
+            currentSymbol = null
+            chartData = null
+            destroyChart()
             document.getElementById("startingCashDisplay").innerText = "$0.00"
             document.getElementById("currentCashDisplay").innerText = "$0.00"
             document.getElementById("symbolInput").value = ""
             document.getElementById("dollarAmount").value = ""
             renderTransactions()
-            if (chart) {
-                chart.destroy()
-                chart = null
-            }
         }
+
         async function startTrading() {
             const input = document.getElementById("startingCashInput").value
             const user = document.getElementById("usernameInput").value
@@ -1079,7 +1126,7 @@
                 alert("Enter amount of at least 100")
                 return
             }
-            username=user
+            username = user
             startingCash = amount
             currentCash = amount
             tradingActive = true
@@ -1089,21 +1136,18 @@
             userRef.set({
                 tradingSession: {
                     startingCash: startingCash,
-                    username:username,
+                    username: username,
                     currentCash: currentCash
                 },
                 portfolio: portfolio,
                 watchlist: watchlist
-            },
-                {
-                    merge: true
-                }
-            )
+            }, { merge: true })
             document.getElementById("startScreen").style.display = "none"
             updateCashDisplay()
             renderTransactions()
             refreshPortfolioValue()
         }
+
         function signInWithGoogle() {
             const provider = new firebase.auth.GoogleAuthProvider()
             auth.signInWithPopup(provider)
@@ -1147,6 +1191,8 @@
             tradingActive = false
             simulatedPrice = 0
             currentSymbol = null
+            chartData = null
+            destroyChart()
 
             const userRef = db.collection('users').doc(currentUser.uid)
             userRef.delete()
@@ -1156,11 +1202,6 @@
             document.getElementById("symbolInput").value = ""
             document.getElementById("dollarAmount").value = ""
             renderTransactions()
-
-            if (chart) {
-                chart.destroy()
-                chart = null
-            }
         }
 
         function updateCashDisplay() {
@@ -1205,6 +1246,135 @@
             }
         })
 
+        function setRange(range) {
+            if (!currentSymbol) {
+                alert("Load a stock first!")
+                return
+            }
+            currentRange = range
+            updateActiveButtons()
+            if (chartData) {
+                renderChart()
+            }
+        }
+
+        function setChartType(type) {
+            chartType = type
+            updateActiveButtons()
+            if (chartData) {
+                renderChart()
+            }
+        }
+
+        function updateActiveButtons() {
+            document.querySelectorAll('.range-btn').forEach(btn => {
+                btn.classList.remove('active')
+                if (btn.dataset.range === currentRange) {
+                    btn.classList.add('active')
+                }
+            })
+            document.querySelectorAll('.type-btn').forEach(btn => {
+                btn.classList.remove('active')
+                if (btn.dataset.type === chartType) {
+                    btn.classList.add('active')
+                }
+            })
+        }
+
+        function renderChart() {
+            if (isChartRendering || !chartData) return
+            isChartRendering = true
+
+            try {
+                destroyChart()
+                
+                const ctx = document.getElementById("chart")
+                if (!ctx) {
+                    isChartRendering = false
+                    return
+                }
+
+                const isDarkMode = document.body.classList.contains('light-mode') === false
+                const textColor = isDarkMode ? '#aaa' : '#333'
+                const gridColor = isDarkMode ? '#2a2d36' : '#ddd'
+                const bgColor = isDarkMode ? '#1c1f26' : '#f9f9f9'
+
+                const config = {
+                    type: chartType === 'candlestick' ? 'candlestick' : 'line',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            label: currentSymbol,
+                            data: chartType === 'candlestick' ? chartData.ohlcData : chartData.prices,
+                            borderColor: '#00e676',
+                            backgroundColor: 'rgba(0, 230, 118, 0.1)',
+                            borderWidth: 2,
+                            fill: chartType !== 'candlestick',
+                            tension: 0.4,
+                            pointRadius: 0,
+                            pointHoverRadius: 5,
+                            pointBackgroundColor: '#00e676'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: textColor,
+                                    usePointStyle: true,
+                                    padding: 15,
+                                    font: { size: 12 }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#fff',
+                                bodyColor: '#aaa',
+                                borderColor: '#00e676',
+                                borderWidth: 1,
+                                padding: 10,
+                                displayColors: true,
+                                callbacks: {
+                                    label: function(context) {
+                                        if (chartType === 'candlestick') {
+                                            const data = context.raw
+                                            return `O: $${data.o.toFixed(2)} H: $${data.h.toFixed(2)} L: $${data.l.toFixed(2)} C: $${data.c.toFixed(2)}`
+                                        }
+                                        return `Price: $${context.parsed.y.toFixed(2)}`
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: textColor, maxRotation: 45, minRotation: 0 },
+                                grid: { color: gridColor, drawBorder: false },
+                                background: { color: bgColor }
+                            },
+                            y: {
+                                ticks: { color: textColor, callback: function(v) { return '$' + v.toFixed(2) } },
+                                grid: { color: gridColor, drawBorder: false },
+                                background: { color: bgColor }
+                            }
+                        }
+                    }
+                }
+
+                chartInstance = new Chart(ctx, config)
+                updateActiveButtons()
+            } catch (e) {
+                console.error("Chart render error:", e)
+            } finally {
+                isChartRendering = false
+            }
+        }
+
         function loadStock(symbol) {
             if (!tradingActive) {
                 alert("Start a trading session first!")
@@ -1213,35 +1383,137 @@
 
             document.getElementById("loading").style.display = "block"
             currentSymbol = symbol
+            
             fetch('/api/stock?symbol=' + symbol)
                 .then(res => res.json())
                 .then(jsonResponse => {
                     if (!jsonResponse.success) {
-                        showToast(jsonResponse.error || "failed to show data", 'error');
-                        document.getElementById("loading").style.display = "none";
-                        return;
+                        console.error(jsonResponse.error)
+                        document.getElementById("loading").style.display = "none"
+                        return Promise.reject(jsonResponse.error)
                     }
-                    const data = JSON.parse(jsonResponse.data);
+                    return JSON.parse(jsonResponse.data)
                 })
                 .then(data => {
-
                     if (data.Note) {
-                        alert("api limit")
+                        alert("API limit reached. Please try again later.")
+                        document.getElementById("loading").style.display = "none"
                         return
                     }
                     if (data["Error message"]) {
-                        alert("error")
+                        alert("Invalid symbol. Please try again.")
+                        document.getElementById("loading").style.display = "none"
                         return
                     }
+                    
                     const timeSeries = data["Time Series (Daily)"]
                     if (!timeSeries) {
-                        console.error("API returned: ", data)
-                        alert("check error in console")
+                        alert("No data available for this symbol.")
+                        document.getElementById("loading").style.display = "none"
                         return
                     }
+
                     sortedDates = Object.keys(timeSeries).sort()
+                    processChartData(timeSeries, sortedDates)
+                })
+                .catch(err => {
+                    console.error("Error loading stock:", err)
+                    document.getElementById("loading").style.display = "none"
                 })
         }
+
+        function processChartData(timeSeries, sortedDates) {
+            try {
+                const rangeConfig = {
+                    '5D': 5,
+                    '1M': 20,
+                    '6M': 130,
+                    'YTD': 250,
+                    '1Y': 250,
+                    '5Y': 1250,
+                    'ALL': sortedDates.length
+                }
+
+                const dataPoints = Math.min(rangeConfig[currentRange] || 20, sortedDates.length)
+                const start = Math.max(0, sortedDates.length - dataPoints)
+                const slicedDates = sortedDates.slice(start)
+
+                chartData = {
+                    labels: slicedDates,
+                    prices: [],
+                    ohlcData: []
+                }
+
+                slicedDates.forEach(date => {
+                    const dailyData = timeSeries[date]
+                    const close = parseFloat(dailyData["4. close"])
+                    const open = parseFloat(dailyData["1. open"])
+                    const high = parseFloat(dailyData["2. high"])
+                    const low = parseFloat(dailyData["3. low"])
+
+                    chartData.prices.push(close)
+                    chartData.ohlcData.push({
+                        x: date,
+                        o: open,
+                        h: high,
+                        l: low,
+                        c: close
+                    })
+                })
+
+                currentPrice = chartData.prices[chartData.prices.length - 1]
+                updatePriceDisplay()
+                renderChart()
+                document.getElementById("loading").style.display = "none"
+            } catch (e) {
+                console.error("Error processing chart data:", e)
+                document.getElementById("loading").style.display = "none"
+            }
+        }
+
+        function updatePriceDisplay() {
+            if (!currentPrice) return
+            const priceDisplay = document.getElementById("priceDisplay")
+            priceDisplay.textContent = "$" + currentPrice.toFixed(2)
+            priceDisplay.classList.remove("flash-up", "flash-down")
+            priceDisplay.classList.add(currentPrice >= simulatedPrice ? "flash-up" : "flash-down")
+            simulatedPrice = currentPrice
+        }
+
+        function renderTransactions() {
+            const list = document.getElementById("transactionsList")
+            if (!list) return
+            if (!portfolio || portfolio.length === 0) {
+                list.innerHTML = '<div style="color: #aaa; padding: 10px;">No transactions yet</div>'
+                return
+            }
+            list.innerHTML = portfolio.map(t => `
+                <div class="transaction-row ${t.type.toLowerCase()}">
+                    <div>${t.symbol}</div>
+                    <div>${t.type}</div>
+                    <div>${t.shares.toFixed(2)}</div>
+                    <div>$${t.price.toFixed(2)}</div>
+                    <div>$${(t.shares * t.price).toFixed(2)}</div>
+                </div>
+            `).join('')
+        }
+
+        function renderWatchlist() {
+            const list = document.getElementById("watchlistList")
+            if (!list) return
+            if (!watchlist || watchlist.length === 0) {
+                list.innerHTML = '<div class="watchlist-empty">No watchlist items</div>'
+                return
+            }
+        }
+
+        function loadWatchlistPrices() {}
+        function addToWatchlist() {}
+        function buyStock() {}
+        function sellStock() {}
+        function placeLimitOrder() {}
+        function toggleLimitOrderForm() {}
+        function refreshPortfolioValue() {}
     </script>
 </body>
 
